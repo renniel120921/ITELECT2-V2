@@ -6,6 +6,11 @@ if (session_status() === PHP_SESSION_NONE) {
 
 require_once __DIR__ . '/../../../database/dbconnection.php';
 include_once __DIR__ . '/../../../config/settings-configuration.php';
+require_once__DIR__ . "/../../../src/vendor/autoload.php";
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\SMTP;
+use PHPMailer\PHPMailer\Exception;
+
 class ADMIN
 {
     private $conn;
@@ -81,7 +86,7 @@ class ADMIN
             echo $ex->getMessage();
         }
     }
-    
+
     public function adminSignout()
     {
         unset($_SESSION['adminSession']);
@@ -125,7 +130,7 @@ if(isset($_POST['btn-signup'])){
     $password = trim($_POST['password']);
 
     $addAdmin = new ADMIN();
-    $addAdmin->addAdmin($csrf_token, $username, $email, $password); 
+    $addAdmin->addAdmin($csrf_token, $username, $email, $password);
 }
 
 if(isset($_POST['btn-signin'])){
