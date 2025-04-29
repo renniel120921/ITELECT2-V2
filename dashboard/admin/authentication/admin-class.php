@@ -111,7 +111,7 @@ class ADMIN
                 </body>
                 </html>
                 ";
-                $this->send_email($email, $message, $subject, $this->smtp_email, $this->smtp_password);
+                $this->send_email($email, $message, $subject, $this->$smtp_email, $this->$smtp_password);
                 echo "<script>alert('We sent the OTP to $email!'); window.location.href='../../../verify-otp.php';</script>";
             }
         }
