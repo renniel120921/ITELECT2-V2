@@ -43,7 +43,7 @@ class SystemConfig {
     }
 
     public function getSmtpPassword(){
-        return $this->smtp_Pasword;
+        return $this->smtp_password;
     }
 
     public function runQuery($sql){
