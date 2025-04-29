@@ -34,7 +34,7 @@ class SystemConfig {
         $stmt->execute();
         $email_config = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        $this->smtp_email = email_config['email'];
+        $this->smtp_email = $email_config['email'];
         $this->smtp_password = $email_config['password'];
     }
 
