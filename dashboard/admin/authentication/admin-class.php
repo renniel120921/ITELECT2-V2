@@ -138,7 +138,7 @@ class ADMIN
         ]);
 
         if ($exec) {
-            echo "<script>alert('Admin Added Successfully!'); window.location.href='/dashboard.php';</script>";
+            echo "<script>alert('Admin Added Successfully!'); window.location.href='dashboard/admin/index.php';</script>";
             exit();
         } else {
             echo "<script>alert('Error Adding Admin!'); window.location.href='/';</script>";
