@@ -20,7 +20,7 @@
                 <input type="email" name="email" placeholder="Enter Email" required>
                 <input type="password" name="password" placeholder="Enter Password" required>
                 <button type="submit" name="btn-signup">SIGN UP</button>
-                <p>Already have an account? <a href="Index.php">Sign in here</a></p>
+                <p>Already have an account? <a href="index.php">Sign in here</a></p>
             </form>
         </div>
     </div>
