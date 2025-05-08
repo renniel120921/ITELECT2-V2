@@ -14,6 +14,20 @@ body {
     min-height: 100vh;
     padding: 20px;
 }
+.form-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+.form-box {
+    width: 100%;
+    margin: 20px 0;
+}
+
 
 h1 {
     font-size: 28px;
