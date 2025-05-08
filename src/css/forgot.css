@@ -13,12 +13,13 @@ body {
     align-items: center;
     min-height: 100vh; /* Changed from height to min-height for better mobile behavior */
     padding: 20px;
+    flex-direction: column; /* Centers content vertically */
+    text-align: center;
 }
 
 h2 {
     font-size: 28px;
     margin-bottom: 20px;
-    text-align: center;
     color: #2e7d32; /* Deeper green for contrast accessibility */
 }
 
@@ -31,6 +32,7 @@ form {
     max-width: 420px;
     margin: 10px;
     transition: box-shadow 0.3s ease;
+    text-align: left; /* Aligns text inside form to the left */
 }
 
 label {
