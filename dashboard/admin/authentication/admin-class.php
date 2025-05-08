@@ -34,7 +34,7 @@ class ADMIN
     public function sendOtp($otp, $email)
     {
         if (!$email) {
-            echo "<script>alert('No email found'); window.location.href = '../../../';</script>";
+            echo "<script>alert('No email found'); window.location.href = '/';</script>";
             exit();
         }
 
@@ -42,11 +42,12 @@ class ADMIN
         $stmt->execute([":email" => $email]);
 
         if ($stmt->rowCount() > 0) {
-            echo "<script>alert('Email already taken. Please try another one.'); window.location.href = '../../../';</script>";
+            echo "<script>alert('Email already taken. Please try another one.'); window.location.href = '/';</script>";
             exit();
         }
 
         $_SESSION["OTP"] = $otp;
+
         $subject = "OTP Verification";
         $message = <<<HTML
         <!DOCTYPE html>
@@ -72,14 +73,14 @@ class ADMIN
         HTML;
 
         $this->send_email($email, $message, $subject, $this->smtp_email, $this->smtp_password);
-        echo "<script>alert('We sent the OTP to $email!'); window.location.href='../../../verify-otp.php';</script>";
+        echo "<script>alert('We sent the OTP to $email!'); window.location.href='/verify-otp.php';</script>";
     }
 
     public function verifyOtp($username, $email, $password, $tokencode, $otp, $csrf_token)
     {
         if (empty($otp)) {
-            echo "<script>alert('No OTP Found!'); window.location.href='../../../';</script>";
-            exit;
+            echo "<script>alert('No OTP Found!'); window.location.href='/';</script>";
+            exit();
         }
 
         if ($otp === $_SESSION["OTP"]) {
@@ -94,38 +95,38 @@ class ADMIN
                     <img src='cid:logo' width='150'>
                     <h1>Welcome</h1>
                     <p>Hello, <strong>$email</strong></p>
-                    <p>Welcome to Renniel  System</p>
+                    <p>Welcome to Renniel System</p>
                     <p>If you did not sign up, please ignore this email.</p>
                 </div>
             </body></html>
             HTML;
 
             $this->send_email($email, $message, $subject, $this->smtp_email, $this->smtp_password);
-            echo "<script>alert('Thank you!'); window.location.href='../../../';</script>";
+            echo "<script>alert('Thank you!'); window.location.href='/';</script>";
 
             unset($_SESSION["not_verify_username"], $_SESSION["not_verify_email"], $_SESSION["not_verify_password"]);
         } else {
-            echo "<script>alert('It appears that the OTP you entered is invalid!'); window.location.href='../../../verify-otp.php';</script>";
+            echo "<script>alert('It appears that the OTP you entered is invalid!'); window.location.href='/verify-otp.php';</script>";
             exit;
         }
     }
 
     public function addAdmin($csrf_token, $username, $email, $password)
     {
+        if (!isset($csrf_token) || !hash_equals($_SESSION['csrf_token'], $csrf_token)) {
+            echo "<script>alert('Invalid CSRF Token!'); window.location.href='/';</script>";
+            exit();
+        }
+
+        unset($_SESSION['csrf_token']);
+
         $stmt = $this->conn->prepare("SELECT * FROM user WHERE email = :email");
         $stmt->execute([":email" => $email]);
 
         if ($stmt->rowCount() > 0) {
-            echo "<script>alert('Email already exists!'); window.location.href='../../../';</script>";
-            exit;
+            echo "<script>alert('Email already exists!'); window.location.href='/';</script>";
+            exit();
         }
-
-        if (!isset($csrf_token) || !hash_equals($_SESSION['csrf_token'], $csrf_token)) {
-            echo "<script>alert('Invalid CSRF Token!'); window.location.href='../../../';</script>";
-            exit;
-        }
-
-        unset($_SESSION['csrf_token']);
 
         $hash_password = password_hash($password, PASSWORD_DEFAULT);
 
@@ -137,11 +138,11 @@ class ADMIN
         ]);
 
         if ($exec) {
-            echo "<script>alert('Admin Added Successfully!'); window.location.href='../../../';</script>";
-            exit;
+            echo "<script>alert('Admin Added Successfully!'); window.location.href='/dashboard.php';</script>";
+            exit();
         } else {
-            echo "<script>alert('Error Adding Admin!'); window.location.href='../../../';</script>";
-            exit;
+            echo "<script>alert('Error Adding Admin!'); window.location.href='/';</script>";
+            exit();
         }
     }
 
@@ -149,8 +150,8 @@ class ADMIN
     {
         try {
             if (!isset($csrf_token) || !hash_equals($_SESSION['csrf_token'], $csrf_token)) {
-                echo "<script>alert('Invalid CSRF Token!'); window.location.href='../../../';</script>";
-                exit;
+                echo "<script>alert('Invalid CSRF Token!'); window.location.href='/';</script>";
+                exit();
             }
 
             unset($_SESSION['csrf_token']);
@@ -165,10 +166,10 @@ class ADMIN
                 $this->logs($activity, $user_id);
 
                 $_SESSION['adminSession'] = $user_id;
-                echo "<script>alert('Welcome!'); window.location.href='../';</script>";
+                echo "<script>alert('Welcome!'); window.location.href='/dashboard.php';</script>";
                 exit;
             } else {
-                echo "<script>alert('Invalid Credentials!'); window.location.href='../../../';</script>";
+                echo "<script>alert('Invalid Credentials!'); window.location.href='/';</script>";
                 exit;
             }
         } catch (PDOException $ex) {
@@ -179,8 +180,8 @@ class ADMIN
     public function adminSignout()
     {
         unset($_SESSION['adminSession']);
-        echo "<script>alert('Sign Out Successfully!'); window.location.href='../../../';</script>";
-        exit;
+        echo "<script>alert('Sign Out Successfully!'); window.location.href='/';</script>";
+        exit();
     }
 
     public function send_email($email, $message, $subject, $smtp_email, $smtp_password)
@@ -205,8 +206,8 @@ class ADMIN
 
             $mail->send();
         } catch (Exception $e) {
-            echo "<script>alert('Email sending failed: {$mail->ErrorInfo}'); window.location.href='../../../';</script>";
-            exit;
+            echo "<script>alert('Email sending failed: {$mail->ErrorInfo}'); window.location.href='/';</script>";
+            exit();
         }
     }
 
@@ -219,3 +220,4 @@ class ADMIN
         ]);
     }
 }
+?>
