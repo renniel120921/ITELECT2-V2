@@ -6,6 +6,7 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/../../../database/dbconnection.php';
 include_once __DIR__ . '/../../../config/settings-configuration.php';
 require_once __DIR__ . "/../../../src/vendor/autoload.php";
+require_once 'admin-class.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
