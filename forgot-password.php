@@ -28,7 +28,7 @@
         </form>
 
         <p class="text-center text-sm text-gray-600 mt-4">
-            <a href="index.php" class="text-indigo-600 hover:underline">Back to Login</a>
+            <a href="login.php" class="text-indigo-600 hover:underline">Back to Login</a>
         </p>
     </div>
 

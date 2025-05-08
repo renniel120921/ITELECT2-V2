@@ -41,7 +41,7 @@
             </button>
 
             <div class="text-center text-sm text-gray-600 mt-4">
-                Already have an account? <a href="index.php" class="text-indigo-600 hover:underline">Sign in here</a>
+                Already have an account? <a href="login.php" class="text-indigo-600 hover:underline">Sign in here</a>
             </div>
         </form>
     </div>
