@@ -16,7 +16,7 @@
         <input type="email" id="email" name="email" required><br><br>
         <button type="submit">Send Reset Link</button>
     </form>
-    <p><a href="index.php">Back to Login</a></p>
+    <p><a href="Index.php">Back to Login</a></p>
 
 </body>
 </html>

@@ -22,6 +22,6 @@
         <button type="submit">Reset Password</button>
     </form>
 
-    <p><a href="index.php">Back to Login</a></p>
+    <p><a href="Index.php">Back to Login</a></p>
 </body>
 </html>
