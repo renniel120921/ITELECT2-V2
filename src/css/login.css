@@ -6,12 +6,12 @@
 
 body {
     font-family: 'Arial', sans-serif;
-    background-color: #f4f7fc;
+    background-color: #e9eff5; /* Lighter background for better contrast */
     color: #333;
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    min-height: 100vh;
     padding: 20px;
 }
 
@@ -19,17 +19,18 @@ h1 {
     font-size: 28px;
     margin-bottom: 20px;
     text-align: center;
-    color: #4CAF50;
+    color: #2d8659; /* Darker shade of green for accessibility */
 }
 
 form {
-    background-color: #fff;
+    background-color: #ffffff;
     padding: 30px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
     width: 100%;
     max-width: 400px;
     margin: 10px;
+    transition: all 0.3s ease;
 }
 
 input[type="email"],
@@ -37,18 +38,20 @@ input[type="password"],
 input[type="text"] {
     width: 100%;
     padding: 15px;
-    margin: 10px 0;
+    margin: 12px 0;
     border: 1px solid #ccc;
-    border-radius: 5px;
+    border-radius: 6px;
     font-size: 16px;
     outline: none;
-    transition: border-color 0.3s;
+    transition: border-color 0.3s, box-shadow 0.3s;
+    background-color: #f9fbfd;
 }
 
 input[type="email"]:focus,
 input[type="password"]:focus,
 input[type="text"]:focus {
     border-color: #4CAF50;
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.2);
 }
 
 button[type="submit"] {
@@ -58,7 +61,7 @@ button[type="submit"] {
     color: white;
     font-size: 18px;
     border: none;
-    border-radius: 5px;
+    border-radius: 6px;
     cursor: pointer;
     transition: background-color 0.3s ease;
 }
@@ -69,7 +72,8 @@ button[type="submit"]:hover {
 
 p {
     text-align: center;
-    margin-top: 10px;
+    margin-top: 12px;
+    font-size: 14px;
 }
 
 a {
@@ -83,9 +87,10 @@ a:hover {
     text-decoration: underline;
 }
 
+/* Mobile responsiveness */
 @media (max-width: 500px) {
     h1 {
-        font-size: 24px;
+        font-size: 22px;
     }
 
     form {
@@ -97,5 +102,6 @@ a:hover {
     input[type="text"],
     button[type="submit"] {
         font-size: 14px;
+        padding: 12px;
     }
 }
