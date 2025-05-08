@@ -1,5 +1,5 @@
 <?php
-    include_once 'config/settings-configuration.php';
+    include_once 'Index.php';
 ?>
 
 <!DOCTYPE html>
