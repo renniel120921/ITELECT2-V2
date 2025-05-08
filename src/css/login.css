@@ -6,7 +6,7 @@
 
 body {
     font-family: 'Arial', sans-serif;
-    background-color: #e9eff5; /* Lighter background for better contrast */
+    background-color: #e9eff5;
     color: #333;
     display: flex;
     justify-content: center;
@@ -33,7 +33,7 @@ h1 {
     font-size: 28px;
     margin-bottom: 20px;
     text-align: center;
-    color: #2d8659; /* Darker shade of green for accessibility */
+    color: #2d8659;
 }
 
 form {
@@ -101,7 +101,6 @@ a:hover {
     text-decoration: underline;
 }
 
-/* Mobile responsiveness */
 @media (max-width: 500px) {
     h1 {
         font-size: 22px;

@@ -32,7 +32,7 @@ form {
     max-width: 420px;
     margin: 10px;
     transition: box-shadow 0.3s ease;
-    text-align: left; /* Aligns text inside form to the left */
+    text-align: left; 
 }
 
 label {
@@ -94,7 +94,7 @@ a:hover {
     text-decoration: underline;
 }
 
-/* Mobile Styles */
+
 @media (max-width: 500px) {
     h2 {
         font-size: 22px;
