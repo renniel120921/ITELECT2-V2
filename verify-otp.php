@@ -29,7 +29,7 @@
         </form>
 
         <div class="text-center">
-            <a href="signin.php" class="text-sm text-blue-600 hover:underline">Back to Sign In</a>
+            <a href="index.php" class="text-sm text-blue-600 hover:underline">Back to Sign In</a>
         </div>
     </div>
 
