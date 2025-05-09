@@ -1,11 +1,10 @@
 <?php
-session_start();
 require_once 'authentication/admin-class.php';
 
 $admin = new ADMIN();
 if(!$admin->isUserLoggedIn())
 {
-    // $admin->redirect('../../');  
+    // $admin->redirect('../../');
     var_dump($_SESSION['admin_session']);
 }
 

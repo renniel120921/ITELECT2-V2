@@ -1,3 +1,4 @@
+
 <?php
 
     class Database
@@ -13,8 +14,8 @@
         {
             if($_SERVER['SERVER_NAME'] === 'localhost' || $_SERVER['SERVER_ADDR'] === '127.0.0.1' || $_SERVER['SERVER_NAME'] === '192.168.1.72'){
                 $this->host = "localhost";
-                $this->port = "3306";
-                $this->db_name = "itelect2";
+                $this->port = "3307";
+                $this->db_name = "itelec2";
                 $this->username = "root";
                 $this->password = "";
             }
@@ -32,7 +33,7 @@
             try {
                 $this->conn = new PDO("mysql:host=" . $this->host . ";port=" . $this->port . ";dbname=" . $this->db_name, $this->username, $this->password);
                 $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            } catch (PDOException $exception) 
+            } catch (PDOException $exception)
             {
                 echo "Connection error: " . $exception->getMessage();
             }
