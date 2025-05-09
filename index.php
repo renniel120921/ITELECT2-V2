@@ -15,20 +15,28 @@
     <div class="w-full max-w-md p-6 bg-white rounded-xl shadow-md space-y-6">
         <!-- SIGN IN -->
         <div>
-            <h1 class="text-2xl font-bold text-center mb-4">SIGN IN</h1>
-            <form action="dashboard/admin/authentication/admin-class.php" method="POST" class="space-y-4">
-                <input type="hidden" name="csrf_token" value="<?=$_SESSION["csrf_token"]; ?>">
+    <h1 class="text-2xl font-bold text-center mb-4">SIGN IN</h1>
+    <form action="dashboard/admin/authentication/admin-class.php" method="POST" class="space-y-4">
+        <input type="hidden" name="csrf_token" value="<?= $_SESSION["csrf_token"]; ?>">
 
-                <input type="email" name="email" placeholder="Enter Email" required
-                    class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <input type="email" name="email" placeholder="Enter Email" required
+            class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400">
 
-                <input type="password" name="password" placeholder="Enter Password" required
-                    class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400">
+        <input type="password" name="password" placeholder="Enter Password" required
+            class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400">
 
-                <button type="submit" name="btn-signin"
-                    class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition">SIGN IN</button>
-            </form>
-        </div>
+        <button type="submit" name="btn-signin"
+            class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition">
+            SIGN IN
+        </button>
+    </form>
+
+    <!-- Forgot and Reset Links -->
+    <div class="mt-4 text-center space-y-2">
+        <a href="forgot-password.php" class="text-sm text-blue-600 hover:underline">Forgot Password?</a><br>
+        <a href="reset-password.php" class="text-sm text-blue-600 hover:underline">Reset Password</a>
+    </div>
+</div>
 
         <!-- REGISTRATION -->
         <div>
