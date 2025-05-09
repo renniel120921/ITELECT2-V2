@@ -293,7 +293,7 @@ class ADMIN
         $mail->addAddress($email);
         $mail->Username = $smtp_email;
         $mail->Password = $smtp_password;
-        $mail->setFrom($smtp_email, "Mikko");
+        $mail->setFrom($smtp_email, "Renniel");
         $mail->Subject = $subject;
         $mail->msgHTML($message);
         $mail->Send();
