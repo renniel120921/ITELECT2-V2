@@ -1,25 +1,25 @@
 <?php
-session_start(); // Needed for CSRF token
+    include_once 'config/settings-configuration.php';
 
-include_once 'config/settings-configuration.php';
-
-$token = $_GET['token'] ?? '';
-
-// Generate CSRF token if not yet set
-if (!isset($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-}
+    // Optional: Get the reset token from the URL
+    $token = $_GET['token'] ?? '';
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
-<!-- (same HTML head) -->
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Password</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
     <div class="w-full max-w-md p-6 bg-white rounded-xl shadow-md space-y-6">
         <h1 class="text-2xl font-bold text-center text-gray-800">Reset Your Password</h1>
         <p class="text-center text-sm text-gray-600">Enter a new password for your account.</p>
 
-        <form action="reset-handler.php" method="POST" class="space-y-4">
+        <form action="dashboard/admin/authentication/admin-class.php" method="POST" class="space-y-4">
             <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token']; ?>">
             <input type="hidden" name="reset_token" value="<?= htmlspecialchars($token); ?>">
 
@@ -39,5 +39,6 @@ if (!isset($_SESSION['csrf_token'])) {
             <a href="index.php" class="text-sm text-blue-600 hover:underline">Back to Sign In</a>
         </div>
     </div>
+
 </body>
 </html>
