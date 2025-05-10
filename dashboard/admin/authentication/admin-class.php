@@ -327,6 +327,51 @@ class ADMIN
         $stmt = $this->conn->prepare($sql);
         return $stmt;
     }
+
+    public function resetPassword($reset_token, $new_password, $confirm_password, $csrf_token)
+{
+    if (!isset($csrf_token) || !hash_equals($_SESSION['csrf_token'], $csrf_token)) {
+        echo "<script>alert('Invalid CSRF Token!'); window.location.href='../../../';</script>";
+        exit;
+    }
+
+    if ($new_password !== $confirm_password) {
+        echo "<script>alert('Passwords do not match!'); window.history.back();</script>";
+        exit;
+    }
+
+    if (strlen($new_password) < 6) {
+        echo "<script>alert('Password must be at least 6 characters!'); window.history.back();</script>";
+        exit;
+    }
+
+    // Optional: Add more password strength validations here
+
+    $stmt = $this->runQuery("SELECT * FROM user WHERE reset_token = :token LIMIT 1");
+    $stmt->execute([":token" => $reset_token]);
+
+    if ($stmt->rowCount() == 0) {
+        echo "<script>alert('Invalid or expired token!'); window.location.href='../../../';</script>";
+        exit;
+    }
+
+    $hashed_password = md5($new_password); // Consider using password_hash() instead for security
+
+    $update = $this->runQuery("UPDATE user SET password = :password, reset_token = NULL WHERE reset_token = :token");
+    $executed = $update->execute([
+        ":password" => $hashed_password,
+        ":token" => $reset_token
+    ]);
+
+    if ($executed) {
+        echo "<script>alert('Password successfully reset!'); window.location.href='../../../index.php';</script>";
+        exit;
+    } else {
+        echo "<script>alert('Failed to reset password! Please try again.'); window.history.back();</script>";
+        exit;
+    }
+}
+
 }
 
 if(isset($_POST['btn-signup'])){
@@ -378,4 +423,17 @@ if(isset($_GET['admin_signout'])){
     $adminSignout = new ADMIN();
     $adminSignout->adminSignout();
 }
+
+if (isset($_POST['btn-reset-password'])) {
+    session_start();
+    $admin = new ADMIN();
+
+    $csrf_token = $_POST['csrf_token'];
+    $reset_token = $_POST['reset_token'];
+    $new_password = $_POST['new_password'];
+    $confirm_password = $_POST['confirm_password'];
+
+    $admin->resetPassword($reset_token, $new_password, $confirm_password, $csrf_token);
+}
+
 ?>
