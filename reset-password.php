@@ -1,8 +1,10 @@
 <?php
+    session_start();
     include_once 'config/settings-configuration.php';
 
-    // Optional: Get the reset token from the URL
+    // Get token and email from the URL
     $token = $_GET['token'] ?? '';
+    $email = $_GET['email'] ?? '';
 ?>
 
 <!DOCTYPE html>
@@ -20,15 +22,24 @@
         <p class="text-center text-sm text-gray-600">Enter a new password for your account.</p>
 
         <form action="dashboard/admin/authentication/admin-class.php" method="POST" class="space-y-4">
-            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token']; ?>">
+            <!-- CSRF Token -->
+            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?? '' ?>">
+
+            <!-- Reset Token -->
             <input type="hidden" name="reset_token" value="<?= htmlspecialchars($token); ?>">
 
+            <!-- Email -->
+            <input type="hidden" name="email" value="<?= htmlspecialchars($email); ?>">
+
+            <!-- New Password -->
             <input type="password" name="new_password" placeholder="New Password" required
                 class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-400">
 
+            <!-- Confirm Password -->
             <input type="password" name="confirm_password" placeholder="Confirm Password" required
                 class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-400">
 
+            <!-- Submit Button -->
             <button type="submit" name="btn-reset-password"
                 class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition">
                 Reset Password
