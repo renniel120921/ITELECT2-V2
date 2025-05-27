@@ -1,7 +1,7 @@
 <?php
 function sendPasswordReset($email) {
     // Include DB connection
-    require_once '../../../config/database.php';
+    require_once '../../../database/dbconnection.php';
 
     // Check if email exists
     $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
