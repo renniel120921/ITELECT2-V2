@@ -7,7 +7,7 @@ function sendPasswordReset($email) {
     $conn = $database->dbConnection();
 
     // Check if email exists
-    $stmt = $conn->prepare("SELECT id FROM users WHERE email = :email");
+    $stmt = $conn->prepare("SELECT id FROM user WHERE email = :email");
     $stmt->bindValue(':email', $email, PDO::PARAM_STR);
     $stmt->execute();
 
