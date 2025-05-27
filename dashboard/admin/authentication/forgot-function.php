@@ -30,7 +30,7 @@ function sendPasswordReset($email) {
     }
 
     // Send email (simplified)
-    $resetLink = "https://yourdomain.com/reset-password.php?token=" . $token;
+    $resetLink = "http://localhost/ITELECT2-V2/reset-password.php?token=" . $token;
     $subject = "Password Reset Request";
     $message = "Click the link to reset your password: $resetLink";
     $headers = "From: no-reply@yourdomain.com";
