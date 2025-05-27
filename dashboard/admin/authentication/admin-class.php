@@ -391,7 +391,7 @@ if (isset($_POST['btn-forgot-password'])) {
 
     $result = sendPasswordReset($email);
     $_SESSION['flash_message'] = $result;
-    header("Location: ../../forgot-password.php"); // or wherever your form is
+    header("Location: ../../reset-password.php"); // or wherever your form is
     exit;
 }
 
