@@ -289,7 +289,7 @@ class ADMIN
         $mail->SMTPAuth = true;
         $mail->SMTPSecure = "tls";
         $mail->Host = "smtp.gmail.com";
-        $mail->Port = "587";
+        $mail->Port = 587;
         $mail->addAddress($email);
         $mail->Username = $smtp_email;
         $mail->Password = $smtp_password;
