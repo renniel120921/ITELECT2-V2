@@ -62,7 +62,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['btn-reset-password'])
     $delete = $conn->prepare("DELETE FROM password_resets WHERE token = :token");
     $delete->execute([':token' => $reset_token]);
 
-    echo "Password successfully reset. You can now <a href='index.php'>login</a>.";
+    echo "Password successfully reset. You can now <a href='login.php'>login</a>.";
 } else {
     echo "Invalid request.";
 }
