@@ -390,7 +390,7 @@ if (isset($_POST['btn-reset-password'])) {
         die('Invalid CSRF token');
     }
 
-    $token = $_POST['reset-token'] ?? '';
+    $token = $_POST['reset_token'] ?? '';
     $newPassword = $_POST['new_password'] ?? '';
     $confirmPassword = $_POST['confirm_password'] ?? '';
 
