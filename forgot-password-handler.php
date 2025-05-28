@@ -1,5 +1,5 @@
 <?php
-ssession_start();
+session_start();
 require_once 'config/settings-configuration.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
