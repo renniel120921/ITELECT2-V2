@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-include_once '/../../../database/dbconnection.php';
+include_once '../../../database/dbconnection.php';
 include_once '../../../config/settings-configuration.php';
 
 // Create PDO connection
@@ -63,6 +63,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['btn-reset-password'])
     $delete->execute([':token' => $reset_token]);
 
     echo "Password successfully reset. You can now <a href='/ITELECT2-V2/login.php'>login</a>.";
+
 } else {
     echo "Invalid request.";
 }
