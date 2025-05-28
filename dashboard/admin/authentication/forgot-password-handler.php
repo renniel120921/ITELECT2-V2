@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-require '../../../vendor/autoload.php';  // load Composer autoload
+require '../../../vendor/autoload.php';  // Composer autoload
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
@@ -9,46 +9,60 @@ use PHPMailer\PHPMailer\Exception;
 include_once '../../../database/dbconnection.php';
 include_once '../../../config/settings-configuration.php';
 
-
+// Initialize DB connection
 $database = new Database();
 $conn = $database->dbConnection();
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['btn-forgot-password'])) {
-    if (!$conn) die("Database connection failed.");
 
-    $email = trim($_POST['email']);
-    $csrf_token = $_POST['csrf_token'];
+    $email = trim($_POST['email'] ?? '');
+    $csrf_token = $_POST['csrf_token'] ?? '';
 
-    if (!hash_equals($_SESSION['csrf_token'], $csrf_token)) {
-        die("Invalid CSRF token.");
+    // CSRF check
+    if (!isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrf_token)) {
+        die("⚠ Invalid CSRF token.");
     }
 
-    // Check if email exists
-    $stmt = $conn->prepare("SELECT id FROM user WHERE email = :email LIMIT 1");
-    $stmt->bindParam(':email', $email);
-    $stmt->execute();
+    if (empty($email)) {
+        die("⚠ Please enter your email address.");
+    }
 
-    if ($stmt->rowCount() === 1) {
+    try {
+        // Check if the email exists
+        $stmt = $conn->prepare("SELECT id FROM user WHERE email = :email LIMIT 1");
+        $stmt->bindParam(':email', $email);
+        $stmt->execute();
+
+        if ($stmt->rowCount() !== 1) {
+            die("⚠ No account found with that email.");
+        }
+
+        // Generate secure token
         $token = bin2hex(random_bytes(32));
         $expires = date("Y-m-d H:i:s", strtotime('+1 hour'));
 
+        // Optionally delete old tokens for this email
+        $conn->prepare("DELETE FROM password_resets WHERE email = :email")->execute([':email' => $email]);
+
+        // Insert new reset token
         $insert = $conn->prepare("INSERT INTO password_resets (email, token, expires_at) VALUES (:email, :token, :expires)");
         $insert->execute([
-            ':email' => $email,
-            ':token' => $token,
+            ':email'   => $email,
+            ':token'   => $token,
             ':expires' => $expires
         ]);
 
         $reset_link = "http://localhost/ITELECT2-V2/reset-password.php?token=$token";
 
+        // Setup PHPMailer
         $mail = new PHPMailer(true);
 
         try {
             $mail->isSMTP();
             $mail->Host = 'smtp.gmail.com';
             $mail->SMTPAuth = true;
-            $mail->Username = 'rennielsalazar948@gmail.com'; // Replace with your Gmail
-            $mail->Password = 'aift rzhk xzkb irnj'; // Use your Gmail App Password
+            $mail->Username = 'rennielsalazar948@gmail.com';        // Your Gmail
+            $mail->Password = 'aift rzhk xzkb irnj';                // App Password
             $mail->SMTPSecure = 'tls';
             $mail->Port = 587;
 
@@ -56,15 +70,22 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['btn-forgot-password']
             $mail->addAddress($email);
 
             $mail->isHTML(true);
-            $mail->Subject = 'Reset Your Password';
-            $mail->Body = "Click the link below to reset your password:<br><a href='$reset_link'>$reset_link</a>";
+            $mail->Subject = '🔐 Reset Your Password';
+            $mail->Body = "
+                <p>Hi,</p>
+                <p>You requested a password reset. Click the button below to reset your password. This link will expire in 1 hour.</p>
+                <p><a href='$reset_link' style='padding: 10px 15px; background-color: #007bff; color: white; text-decoration: none;'>Reset Password</a></p>
+                <p>If you didn't request this, you can ignore this email.</p>
+                <br><p>— ITELECT2 Support</p>
+            ";
 
             $mail->send();
-            echo "Reset link sent to your email.";
+            echo "✅ Reset link has been sent to your email.";
         } catch (Exception $e) {
-            echo "Mailer Error: {$mail->ErrorInfo}";
+            echo "❌ Mailer Error: " . $mail->ErrorInfo;
         }
-    } else {
-        echo "No account found with that email.";
+
+    } catch (PDOException $e) {
+        die("❌ Database Error: " . $e->getMessage());
     }
 }
