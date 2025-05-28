@@ -391,8 +391,8 @@ if (isset($_POST['btn-reset-password'])) {
     }
 
     $token = $_POST['reset-token'] ?? '';
-    $newPassword = $_POST['new_password'];
-    $confirmPassword = $_POST['confirm_password'];
+    $newPassword = $_POST['new_password'] ?? '';
+    $confirmPassword = $_POST['confirm_password'] ?? '';
 
     if (empty($token)) {
         die('Reset token missing.');
