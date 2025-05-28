@@ -1,9 +1,15 @@
 <?php
 session_start();
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+require '../../../PHPMailer/src/Exception.php';
+require '../../../PHPMailer/src/PHPMailer.php';
+require '../../../PHPMailer/src/SMTP.php';
 include_once '../../../database/dbconnection.php';
 include_once '../../../config/settings-configuration.php';
 
-// Create PDO connection from your class
+// Create PDO connection
 $database = new Database();
 $conn = $database->dbConnection();
 
@@ -37,15 +43,35 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['btn-forgot-password']
         $insert->bindParam(':expires', $expires);
         $insert->execute();
 
-        // Send reset email
+        // Send reset email using PHPMailer
         $reset_link = "http://localhost/ITELECT2-V2/reset-password.php?token=$token";
-        $subject = "Reset Your Password";
-        $message = "Click the link below to reset your password:\n\n$reset_link";
-        $headers = "From: no-reply@itelect2.com";
 
-        mail($email, $subject, $message, $headers);
+        $mail = new PHPMailer(true);
+        try {
+            // Server settings
+            $mail->isSMTP();
+            $mail->Host       = 'smtp.gmail.com';
+            $mail->SMTPAuth   = true;
+            $mail->Username   = 'your_email@gmail.com'; // Your Gmail
+            $mail->Password   = 'your_app_password';    // Use App Password
+            $mail->SMTPSecure = 'tls';
+            $mail->Port       = 587;
 
-        echo "Reset link sent to your email.";
+            // Recipients
+            $mail->setFrom('rennielsalazar948@gmail.com', 'ITELECT2 Support');
+            $mail->addAddress($email);
+
+            // Content
+            $mail->isHTML(true);
+            $mail->Subject = 'Reset Your Password';
+            $mail->Body    = "Click the link below to reset your password:<br><br><a href='$reset_link'>$reset_link</a>";
+
+            $mail->send();
+            echo "Reset link sent to your email.";
+        } catch (Exception $e) {
+            echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
+        }
+
     } else {
         echo "No account found with that email.";
     }
