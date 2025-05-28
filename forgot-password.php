@@ -16,7 +16,7 @@
         <h1 class="text-2xl font-bold text-center text-gray-800">Forgot Password</h1>
         <p class="text-center text-sm text-gray-600">Enter your email and we'll send you a link to reset your password.</p>
 
-        <form action="/forgot-password-handler.php" method="POST" class="space-y-4">
+        <form action="dashboard/admin/authentication/forgot-password-handler.php" method="POST" class="space-y-4">
             <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token']; ?>">
 
             <input type="email" name="email" placeholder="Enter your email address" required
