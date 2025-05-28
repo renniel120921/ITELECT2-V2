@@ -1,6 +1,11 @@
 <?php
 session_start();
 include_once 'config/settings-configuration.php';
+
+// Generate CSRF token if not set
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -12,6 +17,22 @@ include_once 'config/settings-configuration.php';
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
 
+    <!-- Toast Notification -->
+    <?php if (isset($_SESSION['message']) || isset($_SESSION['error'])): ?>
+        <div id="toast" class="fixed top-5 right-5 z-50 px-5 py-3 rounded-md shadow-lg
+            <?= isset($_SESSION['message']) ? 'bg-green-500 text-white' : 'bg-red-500 text-white' ?>">
+            <?= $_SESSION['message'] ?? $_SESSION['error']; ?>
+        </div>
+        <script>
+            setTimeout(() => {
+                const toast = document.getElementById("toast");
+                if (toast) toast.remove();
+            }, 3000);
+        </script>
+        <?php unset($_SESSION['message'], $_SESSION['error']); ?>
+    <?php endif; ?>
+
+    <!-- Form Container -->
     <div class="w-full max-w-md p-6 bg-white rounded-xl shadow-md space-y-6">
         <h1 class="text-2xl font-bold text-center text-gray-800">Forgot Password</h1>
         <p class="text-center text-sm text-gray-600">Enter your email and we'll send you a link to reset your password.</p>
