@@ -6,7 +6,7 @@ if (isset($_POST['btn-forgot-password'])) {
     $email = trim($_POST['email']);
 
     // Check if user exists
-    $stmt = $conn->prepare("SELECT * FROM users WHERE email = :email");
+    $stmt = $conn->prepare("SELECT * FROM user WHERE email = :email");
     $stmt->bindParam(":email", $email);
     $stmt->execute();
 
