@@ -378,21 +378,4 @@ if(isset($_GET['admin_signout'])){
     $adminSignout = new ADMIN();
     $adminSignout->adminSignout();
 }
-
-require_once 'forgot-function.php'; // Include the file where your function is
-
-if (isset($_POST['btn-forgot-password'])) {
-    $email = trim($_POST['email']);
-    $csrf_token = $_POST['csrf_token'];
-
-    if ($csrf_token !== $_SESSION['csrf_token']) {
-        die("Invalid CSRF token.");
-    }
-
-    $result = sendPasswordReset($email);
-    $_SESSION['flash_message'] = $result;
-    header("Location:reset-password.php"); // or wherever your form is
-    exit;
-}
-
 ?>
