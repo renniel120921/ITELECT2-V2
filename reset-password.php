@@ -42,16 +42,15 @@ if (empty($_SESSION['csrf_token'])) {
 
         <form action="reset-password-handler.php" method="POST" class="space-y-4">
             <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token']; ?>">
-            <input type="hidden" name="reset_token" value="<?= $token; ?>">
+            <input type="hidden" name="token" value="<?= htmlspecialchars($_GET['token']) ?>">
 
-            <input type="password" name="new_password" placeholder="New Password" required
-                class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-400">
-
-            <input type="password" name="confirm_password" placeholder="Confirm Password" required
-                class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-400">
+            <input type="password" name="password" placeholder="New password" required
+                class="w-full px-4 py-2 border rounded-md">
+            <input type="password" name="confirm_password" placeholder="Confirm new password" required
+                class="w-full px-4 py-2 border rounded-md">
 
             <button type="submit" name="btn-reset-password"
-                class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition">
+                class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700">
                 Reset Password
             </button>
         </form>

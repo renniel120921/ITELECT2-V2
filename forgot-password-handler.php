@@ -10,19 +10,13 @@ $db = new Database();
 $conn = $db->dbConnection();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btn-forgot-password'])) {
-
-    // CSRF Token Check
-    if (!isset($_POST['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
-        $_SESSION['error'] = 'Invalid CSRF token.';
-        header("Location: forgot-password.php");
-        exit();
+    if (!hash_equals($_SESSION['csrf_token'], $_POST['csrf_token'])) {
+        die('Invalid CSRF token');
     }
 
-    // Sanitize email input
-    $email = filter_var(trim($_POST['email']), FILTER_SANITIZE_EMAIL);
+    $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
 
-    // Check if email exists
-    $stmt = $conn->prepare("SELECT * FROM user WHERE email = :email LIMIT 1");
+    $stmt = $conn->prepare("SELECT * FROM user WHERE email = :email");
     $stmt->bindParam(":email", $email);
     $stmt->execute();
 
@@ -30,40 +24,44 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btn-forgot-password']
         $token = bin2hex(random_bytes(50));
         $expiry = date("Y-m-d H:i:s", strtotime("+1 hour"));
 
-        // Update token and expiry in DB
-        $update = $conn->prepare("UPDATE user SET reset_token = :token, token_expiry = :expiry WHERE email = :email");
-        $update->bindParam(":token", $token);
-        $update->bindParam(":expiry", $expiry);
-        $update->bindParam(":email", $email);
-        $update->execute();
+        // Delete any existing reset tokens for this email
+        $del = $conn->prepare("DELETE FROM password_resets WHERE email = :email");
+        $del->bindParam(":email", $email);
+        $del->execute();
 
-        // Email Sending
+        // Insert new token
+        $insert = $conn->prepare("INSERT INTO password_resets (email, token, token_expiry) VALUES (:email, :token, :expiry)");
+        $insert->bindParam(":email", $email);
+        $insert->bindParam(":token", $token);
+        $insert->bindParam(":expiry", $expiry);
+        $insert->execute();
+
+        // Send email
         $mail = new PHPMailer(true);
         try {
             $mail->isSMTP();
-            $mail->Host       = 'smtp.gmail.com';
-            $mail->SMTPAuth   = true;
-            $mail->Username   = 'rennielsalazar948@gmail.com'; // 🔐 REPLACE
-            $mail->Password   = 'gssm lvoy ssrf ozxw';    // 🔐 USE AN APP PASSWORD
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = 587;
+            $mail->Host = 'smtp.gmail.com';
+            $mail->SMTPAuth = true;
+            $mail->Username = 'rennielsalazar948@gmail.com';
+            $mail->Password = 'gssm lvoy ssrf ozxw';
+            $mail->SMTPSecure = 'tls';
+            $mail->Port = 587;
 
-            $mail->setFrom('rennielsalazar948@gmail.com', 'Reset ka Password');
+            $mail->setFrom('renielsalazar@gmail.com', 'Your System Name');
             $mail->addAddress($email);
             $mail->isHTML(true);
-            $mail->Subject = 'Password Reset Request';
-
-            $resetUrl = "http://" . $_SERVER['HTTP_HOST'] . "/reset-password.php?token=" . urlencode($token);
-            $mail->Body = "Hi,<br><br>Click the link below to reset your password:<br><br>
-                           <a href='$resetUrl'>$resetUrl</a><br><br>This link will expire in 1 hour.";
+            $mail->Subject = 'Reset Password Link';
+            $mail->Body = "Click the link below to reset your password:<br><br>
+                <a href='http://yourdomain.com/reset-password.php?token=$token'>Reset Password</a><br><br>
+                This link will expire in 1 hour.";
 
             $mail->send();
-            $_SESSION['message'] = "Reset link has been sent to your email address.";
+            $_SESSION['message'] = "Reset link sent to your email.";
         } catch (Exception $e) {
-            $_SESSION['error'] = "Email sending failed: {$mail->ErrorInfo}";
+            $_SESSION['error'] = "Failed to send email. {$mail->ErrorInfo}";
         }
     } else {
-        $_SESSION['error'] = "No account found with that email address.";
+        $_SESSION['error'] = "Email not found.";
     }
 
     header("Location: forgot-password.php");
