@@ -1,8 +1,8 @@
 <?php
 session_start();
 
-include_once '/../../../database/dbconnection.php';
-include_once '../../../config/settings-configuration.php';
+include_once '../../database/dbconnection.php';
+include_once 'config/settings-configuration.php';
 
 // Create PDO connection
 $database = new Database();
