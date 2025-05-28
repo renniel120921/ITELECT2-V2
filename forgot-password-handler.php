@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '/../../database/dbconnection.php'; // make sure this path is correct
+require_once 'dbconnection.php'; // make sure this path is correct
 
 // Check CSRF token if you're using it (optional but recommended)
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
