@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['btn-forgot-password']
             $mail->isHTML(true);
             $mail->Subject = 'Reset Password Link';
             $mail->Body = "Click the link below to reset your password:<br><br>
-                <a href='http://yourdomain.com/reset-password.php?token=$token'>Reset Password</a><br><br>
+                <a href='http://localhost/ITELECT2-V2/reset-password.php?token=$token'>Reset Password</a><br><br>
                 This link will expire in 1 hour.";
 
             $mail->send();
