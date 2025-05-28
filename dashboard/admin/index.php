@@ -4,7 +4,7 @@ require_once 'authentication/admin-class.php';
 $admin = new ADMIN();
 
 if (!$admin->isUserLoggedIn()) {
-    header('Location: ../../index.php');
+    header('Location: ../../login.php');
     exit;
 }
 
