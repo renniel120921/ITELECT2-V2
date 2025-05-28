@@ -33,7 +33,7 @@
 
     <!-- Forgot and Reset Links -->
     <div class="mt-4 text-center space-y-2">
-        <a href="forgot-password.php" class="text-sm text-blue-600 hover:underline">Forgot Password?</a><br>
+        <a href="forgot-reset-password.php" class="text-sm text-blue-600 hover:underline">Forgot Password?</a><br>
         <!--<a href="reset-password.php" class="text-sm text-blue-600 hover:underline">Reset Password</a>
     </div>
 </div>
