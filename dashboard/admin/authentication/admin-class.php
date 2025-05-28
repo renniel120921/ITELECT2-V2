@@ -374,8 +374,11 @@ if(isset($_POST['btn-signin'])){
     $adminSignin->adminSignin($email, $password, $csrf_token);
 }
 
-if(isset($_GET['admin_signout'])){
-    $adminSignout = new ADMIN();
-    $adminSignout->adminSignout();
+if (isset($_GET['admin_signout']) && $_GET['admin_signout'] == 1) {
+    session_start();
+    session_unset();
+    session_destroy();
+    header('Location: /ITELECT2-V2/login.php'); // adjust kung nasaan ang login.php mo
+    exit;
 }
 ?>
