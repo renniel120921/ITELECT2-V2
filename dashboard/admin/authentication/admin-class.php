@@ -381,8 +381,10 @@ if(isset($_GET['admin_signout'])){
 
 if (isset($_POST['btn-reset-password'])) {
     include_once '../../../database/dbconnection.php';
-    session_start();
 
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
     //CSRF token validation
     if ($_POST['csrf_token'] !== $_SESSION['csrf_token']) {
         die('Invalid CSRF token');
