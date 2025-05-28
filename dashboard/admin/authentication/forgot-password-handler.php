@@ -1,6 +1,6 @@
 <?php
 session_start();
-include_once '../../../database/dbconnection.php'; // adjust path kung iba
+include_once '../../database/dbconnection.php'; // adjust path kung iba
 include_once 'config/settings-configuration.php';
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['btn-forgot-password'])) {
