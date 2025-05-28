@@ -6,8 +6,8 @@ require '../../../vendor/autoload.php';  // Composer autoload
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-include_once '../../../database/dbconnection.php';
-include_once '../../../config/settings-configuration.php';
+include_once '../../database/dbconnection.php';
+include_once 'config/settings-configuration.php';
 
 // Initialize DB connection
 $database = new Database();
