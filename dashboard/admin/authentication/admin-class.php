@@ -378,4 +378,43 @@ if(isset($_GET['admin_signout'])){
     $adminSignout = new ADMIN();
     $adminSignout->adminSignout();
 }
+
+if (isset($_POST['btn-reset-password'])) {
+    include_once '../../../database/dbconnection.php';
+    session_start();
+
+    //CSRF token validation
+    if ($_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        die('Invalid CSRF token');
+    }
+
+    $token = $_POST['reset-token'] ?? '';
+    $newPassword = $_POST['new_passsword'];
+    $confirmPassword = $_POST['confirm_password'];
+
+    if (empty($token)) {
+        die('Reset token missing.');
+    }
+
+    if ($newPassword !== $confirmPassword) {
+        die('Passwords do not match.');
+    }
+
+    //Hash the Password
+    $hashedPassword = password_hash($newPassword, PASSWORD_DEFAULT);
+
+    // Check if token exist in DB and update password
+    $stmt = $conn->prepare("UPDATE user SET password = ?, reset_token = NULL WHERE reset_token = ?");
+    $stmt->bind_param("ss, $hashedPassword, $token");
+    $stmt->execute();
+
+    if ($stmt->affected_rows > 0) {
+        echo "Password reset successful. <a href='../../..index.php'>Login now</a>";
+    } else {
+        echo "Invalid or Expired reset_token";
+    }
+
+    $stmt->close();
+    $conn->close();
+}
 ?>
