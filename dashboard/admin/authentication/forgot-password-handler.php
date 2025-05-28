@@ -13,6 +13,9 @@ include_once '../../../config/settings-configuration.php';
 $database = new Database();
 $conn = $database->dbConnection();
 
+// Enable PDO error reporting for debug
+$conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['btn-forgot-password'])) {
 
     $email = trim($_POST['email'] ?? '');
@@ -41,16 +44,26 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['btn-forgot-password']
         $token = bin2hex(random_bytes(32));
         $expires = date("Y-m-d H:i:s", strtotime('+1 hour'));
 
-        // Optionally delete old tokens for this email
-        $conn->prepare("DELETE FROM password_resets WHERE email = :email")->execute([':email' => $email]);
+        echo "🔍 Preparing to insert reset token for: $email<br>";
+
+        // Delete any existing tokens
+        $delete = $conn->prepare("DELETE FROM password_resets WHERE email = :email");
+        $delete->execute([':email' => $email]);
+        echo "🗑️ Old tokens deleted<br>";
 
         // Insert new reset token
         $insert = $conn->prepare("INSERT INTO password_resets (email, token, expires_at) VALUES (:email, :token, :expires)");
-        $insert->execute([
+        $success = $insert->execute([
             ':email'   => $email,
             ':token'   => $token,
             ':expires' => $expires
         ]);
+
+        if (!$success) {
+            die("❌ Failed to insert reset token.");
+        }
+
+        echo "✅ Token inserted successfully<br>";
 
         $reset_link = "http://localhost/ITELECT2-V2/reset-password.php?token=$token";
 
@@ -80,7 +93,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['btn-forgot-password']
             ";
 
             $mail->send();
-            echo "✅ Reset link has been sent to your email.";
+            echo "📧 Reset link sent to your email.";
         } catch (Exception $e) {
             echo "❌ Mailer Error: " . $mail->ErrorInfo;
         }
