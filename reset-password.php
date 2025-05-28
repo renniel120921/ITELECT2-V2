@@ -1,5 +1,5 @@
 <?php
-    include_once 'handle-reset-password.php';
+    include_once 'config/settings-configuration.php';
 
     // Optional: Get the reset token from the URL
     $token = $_GET['token'] ?? '';
