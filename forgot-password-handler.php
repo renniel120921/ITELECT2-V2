@@ -1,48 +1,62 @@
 <?php
 session_start();
-include_once 'config/settings-configuration.php';
+require_once 'config/settings-configuration.php';
+require_once 'database/dbconnection.php';
 
-if (isset($_POST['btn-forgot-password'])) {
-    $email = trim($_POST['email']);
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
-    // Check if user exists
-    $stmt = $conn->prepare("SELECT * FROM user WHERE email = :email");
-    $stmt->bindParam(":email", $email);
-    $stmt->execute();
-
-    if ($stmt->rowCount() > 0) {
-        // Generate token
-        $token = bin2hex(random_bytes(50));
-        $expires_at = date("Y-m-d H:i:s", strtotime("+1 hour"));
-
-        // Remove existing token
-        $conn->prepare("DELETE FROM password_resets WHERE email = :email")->execute([':email' => $email]);
-
-        // Save token to DB
-        $insert = $conn->prepare("INSERT INTO password_resets (email, token, expires_at) VALUES (:email, :token, :expires_at)");
-        $insert->execute([
-            ':email' => $email,
-            ':token' => $token,
-            ':expires_at' => $expires_at
-        ]);
-
-        // Send email
-        $reset_link = "http://localhost/ITELECT2-V2/reset-password.php?token=$token";
-        $subject = "Reset Your Password";
-        $message = "Click the link below to reset your password:<br><br>
-        <a href='$reset_link'>$reset_link</a><br><br>
-        This link will expire in 1 hour.";
-
-        // Use mail() or PHPMailer here
-        // mail($email, $subject, $message, $headers);
-
-        $_SESSION['message'] = "Password reset link has been sent to your email.";
-        header("Location: forgot-password.php");
-        exit;
-    } else {
-        $_SESSION['error'] = "No account found with that email.";
-        header("Location: forgot-password.php");
-        exit;
-    }
+// CSRF validation
+if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+    $_SESSION['error'] = "Invalid CSRF token.";
+    header("Location: reset-password.php?token=" . $_POST['token']);
+    exit();
 }
-?>
+
+// Input validation
+$token = $_POST['token'] ?? '';
+$password = $_POST['password'] ?? '';
+$confirm_password = $_POST['confirm_password'] ?? '';
+
+if (empty($token) || empty($password) || empty($confirm_password)) {
+    $_SESSION['error'] = "All fields are required.";
+    header("Location: reset-password.php?token=$token");
+    exit();
+}
+
+if ($password !== $confirm_password) {
+    $_SESSION['error'] = "Passwords do not match.";
+    header("Location: reset-password.php?token=$token");
+    exit();
+}
+
+// Use SystemConfig to get PDO connection
+$systemConfig = new SystemConfig();
+$stmt = $systemConfig->runQuery("SELECT * FROM password_resets WHERE token = :token AND expires_at > NOW()");
+$stmt->execute([':token' => $token]);
+$resetData = $stmt->fetch(PDO::FETCH_ASSOC);
+
+if (!$resetData) {
+    $_SESSION['error'] = "Invalid or expired token.";
+    header("Location: reset-password.php?token=$token");
+    exit();
+}
+
+$email = $resetData['email'];
+$hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+// Update password in `users` table
+$updateStmt = $systemConfig->runQuery("UPDATE users SET password = :password WHERE email = :email");
+$updateStmt->execute([
+    ':password' => $hashed_password,
+    ':email' => $email
+]);
+
+// Delete reset token after use
+$deleteStmt = $systemConfig->runQuery("DELETE FROM password_resets WHERE email = :email");
+$deleteStmt->execute([':email' => $email]);
+
+$_SESSION['message'] = "Password has been reset successfully. Please log in with your new password.";
+header("Location: login.php");
+exit();
