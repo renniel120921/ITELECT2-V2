@@ -19,7 +19,7 @@
         <h1 class="text-2xl font-bold text-center text-gray-800">Reset Your Password</h1>
         <p class="text-center text-sm text-gray-600">Enter a new password for your account.</p>
 
-        <form action="dashboard/admin/authentication/admin-class.php" method="POST" class="space-y-4">
+        <form action="handle-reset-password.php" method="POST" class="space-y-4">
             <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token']; ?>">
             <input type="hidden" name="reset_token" value="<?= htmlspecialchars($token); ?>">
 
