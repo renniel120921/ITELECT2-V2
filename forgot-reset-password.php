@@ -4,7 +4,6 @@
 
     $token = $_GET['token'] ?? '';
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
