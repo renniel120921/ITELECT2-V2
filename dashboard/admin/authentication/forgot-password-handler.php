@@ -6,8 +6,8 @@ use PHPMailer\PHPMailer\Exception;
 require '../../../PHPMailer/src/Exception.php';
 require '../../../PHPMailer/src/PHPMailer.php';
 require '../../../PHPMailer/src/SMTP.php';
-include_once '../../../database/dbconnection.php';
-include_once '../../../config/settings-configuration.php';
+include_once '/../../../database/dbconnection.php';;
+include_once '/../../../config/settings-configuration.php';
 
 // Create PDO connection
 $database = new Database();
