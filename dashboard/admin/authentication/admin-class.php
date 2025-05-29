@@ -239,7 +239,7 @@ class ADMIN
 
                 $_SESSION['adminSession'] = $user_id;
 
-                $this->redirectWithAlert("Welcome!", '../');
+                $this->redirectWithAlert("Welcome!", '../../../index.php');
             } else {
                 $this->redirectWithAlert("Invalid Credentials!", '../../../');
             }
