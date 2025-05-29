@@ -5,6 +5,9 @@ require 'vendor/autoload.php';
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
+$db = new Database();
+$conn = $dbConnection();
+
 $msg = "";
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
