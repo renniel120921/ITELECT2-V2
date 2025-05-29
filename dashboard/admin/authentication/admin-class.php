@@ -255,29 +255,19 @@ class ADMIN
             $stmt->execute(array(":email" => $email));
             $userRow = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if($stmt->rowCount() == 1) {
-    $userRow = $stmt->fetch(PDO::FETCH_ASSOC); // fetch user data
+            if($stmt->rowCount() == 1){
+                $activity = "Has Successfully signed in";
+                $user_id = $userRow['id'];
+                $this->logs($activity, $user_id);
 
-    // Verify password - assuming $password is the password entered by user in login form
-    if(password_verify($password, $userRow['password'])) {
-        $activity = "Has Successfully signed in";
-        $user_id = $userRow['id'];
-        $this->logs($activity, $user_id);
+                $_SESSION['adminSession'] = $user_id;
 
-        $_SESSION['adminSession'] = $user_id;
-
-        echo "<script>alert('Welcome!'); window.location.href='../';</script>";
-        exit;
-    } else {
-        // Password incorrect
-        echo "<script>alert('Invalid Credentials!'); window.location.href='../../../';</script>";
-        exit;
-    }
-} else {
-    // No user found
-    echo "<script>alert('Invalid Credentials!'); window.location.href='../../../';</script>";
-    exit;
-}
+                echo "<script>alert('Welcome!'); window.location.href='../';</script>";
+                exit;
+            }else{
+                echo "<script>alert('Invalid Credentials!'); window.location.href='../../../';</script>";
+                exit;
+            }
 
         }catch(PDOException $ex){
             echo $ex->getMessage();
