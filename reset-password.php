@@ -1,5 +1,5 @@
 <?php
-require 'dbconnection.php';
+require_once 'database/dbconnection.php';
 
 if (!isset($_GET['token'])) {
     die("Invalid request.");

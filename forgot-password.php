@@ -1,5 +1,5 @@
 <?php
-require 'dbconnection.php';
+require_once'database/dbconnection.php';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = trim($_POST['email']);
