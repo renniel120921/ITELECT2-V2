@@ -1,5 +1,8 @@
 <?php
-require_once'database/dbconnection.php';
+require_once 'database/dbconnection.php';
+
+$db = new Database();
+$conn = $db->dbConnection(); // ← Important: instantiate the connection
 
 $msg = "";
 
@@ -24,7 +27,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $confirm = trim($_POST['confirm']);
 
     if ($password != $confirm) {
-        $msg = "Passwords do not match.";
+        $msg = "<span style='color:red;'>Passwords do not match.</span>";
     } else {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
@@ -33,7 +36,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $stmt->bindParam(':id', $user['id']);
         $stmt->execute();
 
-        $msg = "Password reset successful! <a href='login.php'>Login here</a>.";
+        $msg = "<span style='color:green;'>Password reset successful! <a href='login.php'>Login here</a>.</span>";
     }
 }
 ?>
@@ -46,7 +49,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <style>
         body {
             font-family: 'Segoe UI', sans-serif;
-            background: #e9ecef;
+            background: linear-gradient(135deg, #f5f7fa, #c3cfe2);
             display: flex;
             height: 100vh;
             justify-content: center;
@@ -55,24 +58,25 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         .container {
             background: white;
             padding: 2rem 3rem;
-            border-radius: 12px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            border-radius: 16px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
             width: 400px;
         }
         h2 {
             margin-bottom: 20px;
-            color: #333;
+            color: #28a745;
+            text-align: center;
         }
         label {
+            font-weight: bold;
             display: block;
             margin-top: 10px;
-            font-weight: bold;
         }
         input[type="password"] {
             width: 100%;
             padding: 10px;
             margin-top: 5px;
-            border-radius: 6px;
+            border-radius: 8px;
             border: 1px solid #ccc;
         }
         button {
@@ -82,13 +86,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             border: none;
             padding: 10px 15px;
             width: 100%;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             font-weight: bold;
         }
+        button:hover {
+            background: #218838;
+        }
         .message {
             margin-top: 15px;
-            color: #555;
+            font-size: 0.95rem;
+            text-align: center;
         }
     </style>
 </head>
