@@ -7,20 +7,31 @@ $conn = $db->dbConnection();
 $msg = "";
 $success = false;
 
+// Basic CSRF token for form protection (optional but recommended)
+session_start();
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
 if (!isset($_GET['token']) || empty(trim($_GET['token']))) {
     die("Invalid request.");
 }
 
 $token = trim($_GET['token']);
 
-// 1. Look up token from password_resets
+// Optional: Validate token format (assuming it's a 64-char hex string)
+if (!preg_match('/^[a-f0-9]{64}$/', $token)) {
+    die("Invalid reset link format.");
+}
+
+// Look up token from password_resets with join on user
 $stmt = $conn->prepare("
     SELECT pr.*, u.email, u.id AS user_id
     FROM password_resets pr
     INNER JOIN user u ON u.id = pr.user_id
     WHERE pr.token = :token AND pr.expires_at > NOW() AND pr.used = 0
 ");
-$stmt->bindParam(':token', $token);
+$stmt->bindParam(':token', $token, PDO::PARAM_STR);
 $stmt->execute();
 
 if ($stmt->rowCount() === 0) {
@@ -30,6 +41,11 @@ if ($stmt->rowCount() === 0) {
 $data = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    // CSRF token check
+    if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
+        die("Invalid CSRF token.");
+    }
+
     $password = trim($_POST['password']);
     $confirm = trim($_POST['confirm']);
 
@@ -39,29 +55,45 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $msg = "Passwords do not match.";
     } elseif (strlen($password) < 8) {
         $msg = "Password must be at least 8 characters.";
-    } else {
+    }
+    // Optional: add password complexity check (comment out if you don't want)
+    elseif (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/', $password)) {
+        $msg = "Password must contain at least one uppercase letter, one lowercase letter, and one digit.";
+    }
+    else {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-        // 2. Update user's password
-        $update = $conn->prepare("UPDATE user SET password = :password WHERE id = :id");
-        $update->bindParam(':password', $hashedPassword);
-        $update->bindParam(':id', $data['user_id']);
+        try {
+            $conn->beginTransaction();
 
-        // 3. Mark the reset token as used
-        $markUsed = $conn->prepare("UPDATE password_resets SET used = 1 WHERE id = :id");
-        $markUsed->bindParam(':id', $data['id']);
+            // Update user's password
+            $update = $conn->prepare("UPDATE user SET password = :password WHERE id = :id");
+            $update->bindParam(':password', $hashedPassword, PDO::PARAM_STR);
+            $update->bindParam(':id', $data['user_id'], PDO::PARAM_INT);
+            $update->execute();
 
-        if ($update->execute() && $markUsed->execute()) {
-            $msg = "Password reset successful! <a href='login.php'>Login here</a>.";
+            // Mark the reset token as used
+            $markUsed = $conn->prepare("UPDATE password_resets SET used = 1 WHERE id = :id");
+            $markUsed->bindParam(':id', $data['id'], PDO::PARAM_INT);
+            $markUsed->execute();
+
+            $conn->commit();
+
+            $msg = "Password reset successful! Redirecting to login...";
             $success = true;
+
+            // Clear CSRF token after success
+            unset($_SESSION['csrf_token']);
+
             header("refresh:3;url=login.php");
-        } else {
+            exit;
+        } catch (Exception $e) {
+            $conn->rollBack();
             $msg = "Something went wrong. Please try again.";
         }
     }
 }
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -122,7 +154,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             margin-top: 15px;
             font-size: 0.95rem;
             text-align: center;
-            color: <?= $success ? 'green' : 'red' ?>;
+            color: <?php echo $success ? '#28a745' : '#dc3545'; ?>;
         }
         a {
             color: #1e90ff;
@@ -138,17 +170,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <div class="container">
     <h2>Reset Your Password</h2>
     <?php if (!$success): ?>
-        <form method="POST" autocomplete="off">
-            <label>New Password:</label>
-            <input type="password" name="password" required minlength="8" autocomplete="new-password" />
-            <label>Confirm Password:</label>
-            <input type="password" name="confirm" required minlength="8" autocomplete="new-password" />
+        <form method="POST" autocomplete="off" novalidate>
+            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+            <label for="password">New Password:</label>
+            <input id="password" type="password" name="password" required minlength="8" autocomplete="new-password" />
+            <label for="confirm">Confirm Password:</label>
+            <input id="confirm" type="password" name="confirm" required minlength="8" autocomplete="new-password" />
             <button type="submit">Reset Password</button>
         </form>
     <?php endif; ?>
 
     <?php if (!empty($msg)): ?>
-        <div class="message"><?= $msg ?></div>
+        <div class="message"><?php echo htmlspecialchars($msg); ?></div>
     <?php endif; ?>
 </div>
 </body>
