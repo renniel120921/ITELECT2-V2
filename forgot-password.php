@@ -1,5 +1,5 @@
 <?php
-require_once'database/dbcon.php';
+require_once'database/dbconnection.php';
 
 $msg = "";
 
