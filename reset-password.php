@@ -12,7 +12,7 @@ if (!isset($_GET['token'])) {
 
 $token = $_GET['token'];
 
-$stmt = $conn->prepare("SELECT * FROM user WHERE token_code = :token AND reset_token_expiration > NOW()");
+$stmt = $conn->prepare("SELECT * FROM user WHERE tokencode = :token AND reset_token_expiration > NOW()");
 $stmt->bindParam(':token', $token);
 $stmt->execute();
 

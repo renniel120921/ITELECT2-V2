@@ -18,7 +18,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
         // Add reset_token_expiration column if not present in your table
-        $stmt = $conn->prepare("UPDATE user SET token_code = :token, created_at = :expires WHERE email = :email");
+        $stmt = $conn->prepare("UPDATE user SET tokencode = :token, created_at = :expires WHERE email = :email");
         $stmt->bindParam(':token', $token);
         $stmt->bindParam(':expires', $expires);
         $stmt->bindParam(':email', $email);
