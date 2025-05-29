@@ -20,16 +20,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     if ($stmt->rowCount() > 0) {
         $token = bin2hex(random_bytes(32));
-        $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
-        // Update the token and expiration
+        // Update the token only (no expiration)
         $update = $conn->prepare("
             UPDATE user
-            SET tokencode = :token, reset_token_expiration = :expires
+            SET tokencode = :token
             WHERE email = :email
         ");
         $update->bindParam(':token', $token);
-        $update->bindParam(':expires', $expires);
         $update->bindParam(':email', $email);
         $update->execute();
 
@@ -43,21 +41,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             $mail->isSMTP();
             $mail->Host = 'smtp.gmail.com';
             $mail->SMTPAuth = true;
-            $mail->Username = getenv('rennielsalazar948@gmail.com'); // Use env variable
-            $mail->Password = getenv('capz hnue qqiz ndnd'); // Use env variable
+            $mail->Username = 'rennielsalazar948@gmail.com'; // use actual email
+            $mail->Password = 'capz hnue qqiz ndnd'; // use actual app password
             $mail->SMTPSecure = 'tls';
             $mail->Port = 587;
 
-            $mail->setFrom($mail->Username, 'Password Reset');
+            $mail->setFrom('rennielsalazar948@gmail.com', 'Password Reset');
             $mail->addAddress($email);
 
             $mail->isHTML(true);
             $mail->Subject = 'Reset Your Password';
             $mail->Body = "
                 <p>Hi there,</p>
-                <p>We received a request to reset your password. Click the link below to reset it:</p>
-                <p><a href='{$resetLink}'>Reset Your Password</a></p>
-                <p>This link will expire in 1 hour. If you didn't request a password reset, you can ignore this email.</p>
+                <p>You requested to reset your password. Click the link below to proceed:</p>
+                <p><a href='{$resetLink}'>Reset Password</a></p>
+                <p>If you did not request this, please ignore this email.</p>
             ";
 
             $mail->send();
