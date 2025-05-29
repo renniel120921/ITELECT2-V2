@@ -219,35 +219,36 @@ class ADMIN
         }
     }
 
-    public function adminSignin(string $email, string $password, string $csrf_token): void
-    {
-        try {
-            if (!isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrf_token)) {
-                $this->redirectWithAlert("Invalid CSRF Token!", '../../../');
-            }
-
-            unset($_SESSION['csrf_token']);
-
-            $stmt = $this->runQuery("SELECT * FROM user WHERE email = :email");
-            $stmt->execute([":email" => $email]);
-            $userRow = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if ($userRow && password_verify($password, $userRow['password'])) {
-                $activity = "Has Successfully signed in";
-                $user_id = $userRow['id'];
-                $this->logs($activity, $user_id);
-
-                $_SESSION['adminSession'] = $user_id;
-
-                $this->redirectWithAlert("Welcome!", '../../../index.php');
-            } else {
-                $this->redirectWithAlert("Invalid Credentials!", '../../../');
-            }
-        } catch (PDOException $ex) {
-            echo "Database error: " . $ex->getMessage();
-            exit;
+   public function adminSignin(string $email, string $password, string $csrf_token): void
+{
+    try {
+        if (!isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrf_token)) {
+            $this->redirectWithAlert("Invalid CSRF Token!", '../../../');
         }
+
+        unset($_SESSION['csrf_token']);
+
+        $stmt = $this->runQuery("SELECT * FROM user WHERE email = :email");
+        $stmt->execute([":email" => $email]);
+        $userRow = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($userRow && password_verify($password, $userRow['password'])) {
+            $activity = "Has Successfully signed in";
+            $user_id = $userRow['id'];
+            $this->logs($activity, $user_id);
+
+            $_SESSION['adminSession'] = $user_id;
+
+            // Redirect to index.php — adjust path depending on your folder structure
+            $this->redirectWithAlert("Welcome!", '../../../index.php');
+        } else {
+            $this->redirectWithAlert("Invalid Credentials!", '../../../');
+        }
+    } catch (PDOException $ex) {
+        echo "Database error: " . $ex->getMessage();
+        exit;
     }
+}
 
     public function adminSignout(): void
     {
