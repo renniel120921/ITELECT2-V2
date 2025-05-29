@@ -6,7 +6,7 @@ $conn = $db->dbConnection();
 
 $msg = "";
 
-if (!isset($_GET['token'])) {
+if (!isset($_GET['token']) || empty($_GET['token'])) {
     die("Invalid token.");
 }
 
@@ -34,10 +34,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     if ($password !== $confirm) {
         $msg = "<span style='color:red;'>Passwords do not match.</span>";
+    } elseif (strlen($password) < 8) {
+        $msg = "<span style='color:red;'>Password must be at least 8 characters.</span>";
     } else {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-        // Fix column name here (tokencode, not token_code)
         $stmt = $conn->prepare("UPDATE user SET password = :password, tokencode = NULL, reset_token_expiration = NULL WHERE id = :id");
         $stmt->bindParam(':password', $hashedPassword);
         $stmt->bindParam(':id', $user['id']);
@@ -112,9 +113,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <h2>Reset Your Password</h2>
     <form method="POST" autocomplete="off">
         <label>New Password:</label>
-        <input type="password" name="password" required>
+        <input type="password" name="password" required minlength="8" autocomplete="new-password">
         <label>Confirm Password:</label>
-        <input type="password" name="confirm" required>
+        <input type="password" name="confirm" required minlength="8" autocomplete="new-password">
         <button type="submit">Reset Password</button>
     </form>
     <div class="message"><?= $msg ?></div>
