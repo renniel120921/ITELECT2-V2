@@ -6,40 +6,47 @@ $conn = $db->dbConnection();
 
 $msg = "";
 
-if (!isset($_GET['token']) || empty($_GET['token'])) {
-    die("Invalid token.");
+// 1. Token check
+if (!isset($_GET['token']) || empty(trim($_GET['token']))) {
+    die("Invalid request.");
 }
 
-$token = $_GET['token'];
+$token = trim($_GET['token']);
 
-// Fetch user by token only
+// 2. Hanapin user gamit ang token
 $stmt = $conn->prepare("SELECT * FROM user WHERE tokencode = :token");
 $stmt->bindParam(':token', $token);
 $stmt->execute();
 
-if ($stmt->rowCount() == 0) {
-    die("Token expired or invalid.");
+if ($stmt->rowCount() === 0) {
+    die("Link is expired or invalid.");
 }
 
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
+// 3. Pag-submit ng bagong password
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $password = trim($_POST['password']);
     $confirm = trim($_POST['confirm']);
 
-    if ($password !== $confirm) {
-        $msg = "<span style='color:red;'>Passwords do not match.</span>";
+    if (empty($password) || empty($confirm)) {
+        $msg = "Please fill in all fields.";
+    } elseif ($password !== $confirm) {
+        $msg = "Passwords do not match.";
     } elseif (strlen($password) < 8) {
-        $msg = "<span style='color:red;'>Password must be at least 8 characters.</span>";
+        $msg = "Password must be at least 8 characters.";
     } else {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-        $stmt = $conn->prepare("UPDATE user SET password = :password, tokencode = NULL WHERE id = :id");
-        $stmt->bindParam(':password', $hashedPassword);
-        $stmt->bindParam(':id', $user['id']);
-        $stmt->execute();
+        $update = $conn->prepare("UPDATE user SET password = :password, tokencode = NULL WHERE id = :id");
+        $update->bindParam(':password', $hashedPassword);
+        $update->bindParam(':id', $user['id']);
 
-        $msg = "<span style='color:green;'>Password reset successful! <a href='login.php'>Login here</a>.</span>";
+        if ($update->execute()) {
+            $msg = "Password reset successful! <a href='login.php'>Login here</a>.";
+        } else {
+            $msg = "Something went wrong. Please try again.";
+        }
     }
 }
 ?>
@@ -100,6 +107,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             margin-top: 15px;
             font-size: 0.95rem;
             text-align: center;
+            color: <?= strpos($msg, 'successful') !== false ? 'green' : 'red' ?>;
         }
     </style>
 </head>
@@ -113,7 +121,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <input type="password" name="confirm" required minlength="8" autocomplete="new-password">
         <button type="submit">Reset Password</button>
     </form>
-    <div class="message"><?= $msg ?></div>
+    <?php if (!empty($msg)): ?>
+        <div class="message"><?= htmlspecialchars($msg) ?></div>
+    <?php endif; ?>
 </div>
 </body>
 </html>
