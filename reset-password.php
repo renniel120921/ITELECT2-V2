@@ -5,6 +5,7 @@ $db = new Database();
 $conn = $db->dbConnection();
 
 $msg = "";
+$success = false;
 
 // 1. Token check
 if (!isset($_GET['token']) || empty(trim($_GET['token']))) {
@@ -13,7 +14,7 @@ if (!isset($_GET['token']) || empty(trim($_GET['token']))) {
 
 $token = trim($_GET['token']);
 
-// 2. Hanapin user gamit ang token
+// 2. Find user by token
 $stmt = $conn->prepare("SELECT * FROM user WHERE tokencode = :token");
 $stmt->bindParam(':token', $token);
 $stmt->execute();
@@ -24,8 +25,10 @@ if ($stmt->rowCount() === 0) {
 
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// 3. Pag-submit ng bagong password
+// 3. Process form submission
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    // TODO: Implement CSRF token verification here for security
+
     $password = trim($_POST['password']);
     $confirm = trim($_POST['confirm']);
 
@@ -44,6 +47,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         if ($update->execute()) {
             $msg = "Password reset successful! <a href='login.php'>Login here</a>.";
+            $success = true;
+
+            // Optional: Redirect after 3 seconds
+            header("refresh:3;url=login.php");
         } else {
             $msg = "Something went wrong. Please try again.";
         }
@@ -54,7 +61,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Reset Password</title>
     <style>
         body {
@@ -64,6 +71,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             height: 100vh;
             justify-content: center;
             align-items: center;
+            margin: 0;
         }
         .container {
             background: white;
@@ -71,6 +79,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             border-radius: 16px;
             box-shadow: 0 5px 20px rgba(0,0,0,0.1);
             width: 400px;
+            box-sizing: border-box;
         }
         h2 {
             margin-bottom: 20px;
@@ -88,6 +97,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             margin-top: 5px;
             border-radius: 8px;
             border: 1px solid #ccc;
+            box-sizing: border-box;
         }
         button {
             margin-top: 20px;
@@ -107,22 +117,33 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             margin-top: 15px;
             font-size: 0.95rem;
             text-align: center;
-            color: <?= strpos($msg, 'successful') !== false ? 'green' : 'red' ?>;
+            color: <?= $success ? 'green' : 'red' ?>;
+        }
+        a {
+            color: #1e90ff;
+            font-weight: bold;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
 <div class="container">
     <h2>Reset Your Password</h2>
-    <form method="POST" autocomplete="off">
-        <label>New Password:</label>
-        <input type="password" name="password" required minlength="8" autocomplete="new-password">
-        <label>Confirm Password:</label>
-        <input type="password" name="confirm" required minlength="8" autocomplete="new-password">
-        <button type="submit">Reset Password</button>
-    </form>
+    <?php if (!$success): ?>
+        <form method="POST" autocomplete="off">
+            <label>New Password:</label>
+            <input type="password" name="password" required minlength="8" autocomplete="new-password" />
+            <label>Confirm Password:</label>
+            <input type="password" name="confirm" required minlength="8" autocomplete="new-password" />
+            <button type="submit">Reset Password</button>
+        </form>
+    <?php endif; ?>
+
     <?php if (!empty($msg)): ?>
-        <div class="message"><?= htmlspecialchars($msg) ?></div>
+        <div class="message"><?= $msg ?></div>
     <?php endif; ?>
 </div>
 </body>
