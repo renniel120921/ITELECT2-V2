@@ -36,11 +36,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             $mail->Host = 'smtp.gmail.com';
             $mail->SMTPAuth = true;
             $mail->Username = 'rennielsalazar948@gmail.com'; // update if needed
-            $mail->Password = 'your_app_password_here'; // update with your Gmail app password
+            $mail->Password = 'capz hnue qqiz ndnd'; // update with your Gmail app password
             $mail->SMTPSecure = 'tls';
             $mail->Port = 587;
 
-            $mail->setFrom('rennielsalazar948@gmail.com', 'Your Site Name');
+            $mail->setFrom('rennielsalazar948@gmail.com', 'Reset Password ka ya ??');
             $mail->addAddress($email);
 
             $mail->isHTML(true);
