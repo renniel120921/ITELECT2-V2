@@ -14,47 +14,48 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $email = filter_var(trim($_POST['email']), FILTER_VALIDATE_EMAIL);
 
     if ($email) {
-        // Check if user exists
+        // Check if email exists
         $stmt = $conn->prepare("SELECT * FROM user WHERE email = :email");
         $stmt->bindParam(':email', $email);
         $stmt->execute();
 
         if ($stmt->rowCount() > 0) {
             $token = bin2hex(random_bytes(32));
+            $expires = date("Y-m-d H:i:s", strtotime('+1 hour')); // expires in 1 hour
 
-            // Update token in DB
+            // Update token and expiration in DB
             $update = $conn->prepare("
                 UPDATE user
-                SET tokencode = :token
+                SET tokencode = :token, token_expire = :expire
                 WHERE email = :email
             ");
             $update->bindParam(':token', $token);
+            $update->bindParam(':expire', $expires);
             $update->bindParam(':email', $email);
             $update->execute();
 
             $resetLink = "http://localhost/ITELECT2-V2/reset-password.php?token=" . urlencode($token);
 
-            // Mailer setup
             $mail = new PHPMailer(true);
-
             try {
                 $mail->isSMTP();
                 $mail->Host = 'smtp.gmail.com';
                 $mail->SMTPAuth = true;
-                $mail->Username = 'rennielsalazar948@gmail.com'; // move to ENV
-                $mail->Password = 'capz hnue qqiz ndnd';         // move to ENV
+                $mail->Username = getenv('rennielsalazar948@gmail.com');  // Set this in your system or .env
+                $mail->Password = getenv('capz hnue qqiz ndnd');  // Set this in your system or .env
                 $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
                 $mail->Port = 587;
 
-                $mail->setFrom('rennielsalazar948@gmail.com', 'SM Mall Support');
+                $mail->setFrom(getenv('rennielsalazar948@gmail.com'), 'Reset Password | Your Website');
                 $mail->addAddress($email);
                 $mail->isHTML(true);
                 $mail->Subject = 'Reset Your Password';
                 $mail->Body = "
-                    <p>Hello,</p>
-                    <p>You requested a password reset. Click below to reset it:</p>
-                    <p><a href='{$resetLink}'>Reset Password</a></p>
-                    <p>If you didn’t request this, you can safely ignore this email.</p>
+                    <p>Hi,</p>
+                    <p>We received a request to reset your password. Click the button below:</p>
+                    <p><a href='{$resetLink}' style='background:#007BFF;color:white;padding:10px 15px;border-radius:5px;text-decoration:none;'>Reset Password</a></p>
+                    <p>This link will expire in 1 hour.</p>
+                    <p>If you didn't request this, you can ignore it.</p>
                 ";
 
                 $mail->send();

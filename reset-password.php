@@ -7,28 +7,29 @@ $conn = $db->dbConnection();
 $msg = "";
 $success = false;
 
-// 1. Token check
 if (!isset($_GET['token']) || empty(trim($_GET['token']))) {
     die("Invalid request.");
 }
 
 $token = trim($_GET['token']);
 
-// 2. Find user by token
-$stmt = $conn->prepare("SELECT * FROM user WHERE tokencode = :token");
+// 1. Look up token from password_resets
+$stmt = $conn->prepare("
+    SELECT pr.*, u.email, u.id AS user_id
+    FROM password_resets pr
+    INNER JOIN user u ON u.id = pr.user_id
+    WHERE pr.token = :token AND pr.expires_at > NOW() AND pr.used = 0
+");
 $stmt->bindParam(':token', $token);
 $stmt->execute();
 
 if ($stmt->rowCount() === 0) {
-    die("Link is expired or invalid.");
+    die("This reset link is invalid or expired.");
 }
 
-$user = $stmt->fetch(PDO::FETCH_ASSOC);
+$data = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// 3. Process form submission
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    // TODO: Implement CSRF token verification here for security
-
     $password = trim($_POST['password']);
     $confirm = trim($_POST['confirm']);
 
@@ -41,15 +42,18 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     } else {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-        $update = $conn->prepare("UPDATE user SET password = :password, tokencode = NULL WHERE id = :id");
+        // 2. Update user's password
+        $update = $conn->prepare("UPDATE user SET password = :password WHERE id = :id");
         $update->bindParam(':password', $hashedPassword);
-        $update->bindParam(':id', $user['id']);
+        $update->bindParam(':id', $data['user_id']);
 
-        if ($update->execute()) {
+        // 3. Mark the reset token as used
+        $markUsed = $conn->prepare("UPDATE password_resets SET used = 1 WHERE id = :id");
+        $markUsed->bindParam(':id', $data['id']);
+
+        if ($update->execute() && $markUsed->execute()) {
             $msg = "Password reset successful! <a href='login.php'>Login here</a>.";
             $success = true;
-
-            // Optional: Redirect after 3 seconds
             header("refresh:3;url=login.php");
         } else {
             $msg = "Something went wrong. Please try again.";
@@ -57,6 +61,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
