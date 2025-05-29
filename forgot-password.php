@@ -21,9 +21,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         if ($stmt->rowCount() > 0) {
             $token = bin2hex(random_bytes(32));
-            $expires = date("Y-m-d H:i:s", strtotime('+1 hour')); // expires in 1 hour
+            $expires = date("Y-m-d H:i:s", strtotime('+1 hour')); // Token expires in 1 hour
 
-            // Update token and expiration in DB
+            // Update token and expiration in database
             $update = $conn->prepare("
                 UPDATE user
                 SET tokencode = :token, token_expire = :expire
@@ -38,15 +38,17 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             $mail = new PHPMailer(true);
             try {
+                // Mail server settings
                 $mail->isSMTP();
                 $mail->Host = 'smtp.gmail.com';
                 $mail->SMTPAuth = true;
-                $mail->Username = getenv('rennielsalazar948@gmail.com');  // Set this in your system or .env
-                $mail->Password = getenv('capz hnue qqiz ndnd');  // Set this in your system or .env
+                $mail->Username = 'rennielsalazar948@gmail.com'; // replace with your Gmail
+                $mail->Password = 'capz hnue qqiz ndnd';      // replace with your Gmail app password
                 $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
                 $mail->Port = 587;
 
-                $mail->setFrom(getenv('rennielsalazar948@gmail.com'), 'Reset Password | Your Website');
+                // Email setup
+                $mail->setFrom('rennielsalazar948@gmail.com', 'Reset Password | Your Website');
                 $mail->addAddress($email);
                 $mail->isHTML(true);
                 $mail->Subject = 'Reset Your Password';
@@ -71,6 +73,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
