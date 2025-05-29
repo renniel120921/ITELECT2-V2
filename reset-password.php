@@ -2,7 +2,7 @@
 require_once 'database/dbconnection.php';
 
 $db = new Database();
-$conn = $db->dbConnection(); // ← Important: instantiate the connection
+$conn = $db->dbConnection();
 
 $msg = "";
 
@@ -12,7 +12,8 @@ if (!isset($_GET['token'])) {
 
 $token = $_GET['token'];
 
-$stmt = $conn->prepare("SELECT * FROM user WHERE tokencode = :token AND reset_token_expiration > NOW()");
+// Fetch user by token only
+$stmt = $conn->prepare("SELECT * FROM user WHERE tokencode = :token");
 $stmt->bindParam(':token', $token);
 $stmt->execute();
 
@@ -22,16 +23,22 @@ if ($stmt->rowCount() == 0) {
 
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
+// Check token expiration in PHP
+if (strtotime($user['reset_token_expiration']) < time()) {
+    die("Token expired or invalid.");
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $password = trim($_POST['password']);
     $confirm = trim($_POST['confirm']);
 
-    if ($password != $confirm) {
+    if ($password !== $confirm) {
         $msg = "<span style='color:red;'>Passwords do not match.</span>";
     } else {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-        $stmt = $conn->prepare("UPDATE user SET password = :password, token_code = NULL, reset_token_expiration = NULL WHERE id = :id");
+        // Fix column name here (tokencode, not token_code)
+        $stmt = $conn->prepare("UPDATE user SET password = :password, tokencode = NULL, reset_token_expiration = NULL WHERE id = :id");
         $stmt->bindParam(':password', $hashedPassword);
         $stmt->bindParam(':id', $user['id']);
         $stmt->execute();
@@ -103,7 +110,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <body>
 <div class="container">
     <h2>Reset Your Password</h2>
-    <form method="POST">
+    <form method="POST" autocomplete="off">
         <label>New Password:</label>
         <input type="password" name="password" required>
         <label>Confirm Password:</label>
