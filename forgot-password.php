@@ -1,6 +1,6 @@
 <?php
 require_once 'database/dbconnection.php';
-require 'phpmailer/PHPMailer.php';
+require 'vendor/autoload.php'; // Ito lang ang kailangan
 require 'phpmailer/SMTP.php';
 require 'phpmailer/Exception.php';
 
