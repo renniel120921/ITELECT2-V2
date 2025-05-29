@@ -1,76 +1,22 @@
 <?php
-require_once 'database/dbconnection.php';
-require 'vendor/autoload.php';
+session_start();
+require_once 'dashboard/admin/authentication/admin-class.php';
 
-use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $email = $_POST['email'];
+    $otp = rand(100000, 999999);
+    $_SESSION['reset_email'] = $email;
+    $_SESSION['reset_otp'] = $otp;
 
-$database = new Database();
-$conn = $database->dbConnection();
-
-$msg = "";
-
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $email = filter_var(trim($_POST['email']), FILTER_VALIDATE_EMAIL);
-
-    if ($email) {
-        // Check if email exists
-        $stmt = $conn->prepare("SELECT * FROM user WHERE email = :email");
-        $stmt->bindParam(':email', $email);
-        $stmt->execute();
-
-        if ($stmt->rowCount() > 0) {
-            $token = bin2hex(random_bytes(32));
-            $expires = date("Y-m-d H:i:s", strtotime('+1 hour')); // Token expires in 1 hour
-
-            // Update token and expiration in database
-            $update = $conn->prepare("
-                UPDATE user
-                SET tokencode = :token, token_expire = :expire
-                WHERE email = :email
-            ");
-            $update->bindParam(':token', $token);
-            $update->bindParam(':expire', $expires);
-            $update->bindParam(':email', $email);
-            $update->execute();
-
-            $resetLink = "http://localhost/ITELECT2-V2/reset-password.php?token=" . urlencode($token);
-
-            $mail = new PHPMailer(true);
-            try {
-                // Mail server settings
-                $mail->isSMTP();
-                $mail->Host = 'smtp.gmail.com';
-                $mail->SMTPAuth = true;
-                $mail->Username = 'rennielsalazar948@gmail.com'; // replace with your Gmail
-                $mail->Password = 'capz hnue qqiz ndnd';      // replace with your Gmail app password
-                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                $mail->Port = 587;
-
-                // Email setup
-                $mail->setFrom('rennielsalazar948@gmail.com', 'Reset Password | Your Website');
-                $mail->addAddress($email);
-                $mail->isHTML(true);
-                $mail->Subject = 'Reset Your Password';
-                $mail->Body = "
-                    <p>Hi,</p>
-                    <p>We received a request to reset your password. Click the button below:</p>
-                    <p><a href='{$resetLink}' style='background:#007BFF;color:white;padding:10px 15px;border-radius:5px;text-decoration:none;'>Reset Password</a></p>
-                    <p>This link will expire in 1 hour.</p>
-                    <p>If you didn't request this, you can ignore it.</p>
-                ";
-
-                $mail->send();
-                $msg = "<span style='color: green;'>A password reset link has been sent to your email.</span>";
-            } catch (Exception $e) {
-                $msg = "<span style='color: red;'>Mailer Error: " . htmlspecialchars($mail->ErrorInfo) . "</span>";
-            }
-        } else {
-            $msg = "<span style='color: red;'>No account found with that email address.</span>";
-        }
-    } else {
-        $msg = "<span style='color: red;'>Please enter a valid email address.</span>";
-    }
+    $admin = new ADMIN();
+    $admin->send_email(
+        $email,
+        "<h3>Your OTP is: $otp</h3><p>Use this to reset your password.</p>",
+        "Password Reset OTP",
+        $admin->smtp_email,
+        $admin->smtp_password
+    );
+    echo "<script>alert('OTP sent to $email'); window.location.href='reset-password.php';</script>";
 }
 ?>
 
@@ -81,63 +27,40 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     <title>Forgot Password</title>
     <style>
         body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #eef2f5;
+            font-family: Arial;
+            background: #f0f2f5;
             display: flex;
-            justify-content: center;
             align-items: center;
+            justify-content: center;
             height: 100vh;
         }
-        .container {
+        form {
             background: white;
-            padding: 2rem 3rem;
-            border-radius: 12px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.15);
-            width: 400px;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px #ccc;
+            width: 350px;
         }
-        h2 {
-            margin-bottom: 20px;
-            color: #333;
-            text-align: center;
-        }
-        label {
-            font-weight: bold;
-            margin-bottom: 5px;
-            display: block;
-        }
-        input[type=email] {
+        input[type=email], input[type=submit] {
             width: 100%;
-            padding: 10px;
-            border-radius: 6px;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
             border: 1px solid #ccc;
-            margin-bottom: 15px;
         }
-        button {
-            background-color: #007BFF;
+        input[type=submit] {
+            background: #007bff;
             color: white;
-            padding: 10px;
-            width: 100%;
-            border: none;
-            border-radius: 6px;
-            font-weight: bold;
             cursor: pointer;
-        }
-        .message {
-            margin-top: 15px;
-            font-size: 14px;
-            text-align: center;
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <form method="POST">
         <h2>Forgot Password</h2>
-        <form method="POST" novalidate>
-            <label for="email">Enter your email:</label>
-            <input type="email" name="email" required placeholder="you@example.com" />
-            <button type="submit">Send Reset Link</button>
-        </form>
-        <div class="message"><?= $msg ?></div>
-    </div>
+        <label>Email Address</label>
+        <input type="email" name="email" required placeholder="Enter your email">
+        <input type="submit" value="Send OTP">
+    </form>
 </body>
 </html>
