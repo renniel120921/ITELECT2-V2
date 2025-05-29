@@ -258,7 +258,7 @@ class ADMIN
 
             if($stmt->rowCount() == 1){
                 $activity = "Has Successfully signed in";
-                $user_id = $userRow['id'];
+                $user_id = $userRow['email'];
                 $this->logs($activity, $user_id);
 
                 $_SESSION['adminSession'] = $user_id;
