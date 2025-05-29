@@ -1,6 +1,8 @@
 <?php
 session_start();
-require_once 'dashboard/admin/authentication/admin-class.php';
+require 'vendor/autoload.php'; // If using Composer
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = $_POST['email'];
@@ -8,18 +10,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $_SESSION['reset_email'] = $email;
     $_SESSION['reset_otp'] = $otp;
 
-    $admin = new ADMIN();
-    $admin->send_email(
-        $email,
-        "<h3>Your OTP is: $otp</h3><p>Use this to reset your password.</p>",
-        "Password Reset OTP",
-        $admin->smtp_email,
-        $admin->smtp_password
-    );
-    echo "<script>alert('OTP sent to $email'); window.location.href='reset-password.php';</script>";
+    $mail = new PHPMailer(true);
+    try {
+        // Server settings
+        $mail->isSMTP();
+        $mail->Host       = 'smtp.gmail.com'; // Your SMTP server
+        $mail->SMTPAuth   = true;
+        $mail->Username   = 'rennielsalazar948@gmail.com'; // Your Gmail
+        $mail->Password   = 'xiam wqyh hsrj pqcl';    // App password, not Gmail password
+        $mail->SMTPSecure = 'tls';
+        $mail->Port       = 587;
+
+        // Recipients
+        $mail->setFrom('rennielsalazar948@gmail.com', 'Reset ka password ya?');
+        $mail->addAddress($email);
+
+        // Content
+        $mail->isHTML(true);
+        $mail->Subject = 'Password Reset OTP';
+        $mail->Body    = "<h3>Your OTP is: <strong>$otp</strong></h3><p>Please use it to reset your password.</p>";
+
+        $mail->send();
+        echo "<script>alert('OTP sent to $email'); window.location.href='reset-password.php';</script>";
+    } catch (Exception $e) {
+        echo "<script>alert('Mailer Error: {$mail->ErrorInfo}');</script>";
+    }
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
