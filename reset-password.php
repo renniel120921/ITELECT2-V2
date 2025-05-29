@@ -23,11 +23,6 @@ if ($stmt->rowCount() == 0) {
 
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// Check token expiration in PHP
-if (strtotime($user['reset_token_expiration']) < time()) {
-    die("Token expired or invalid.");
-}
-
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $password = trim($_POST['password']);
     $confirm = trim($_POST['confirm']);
@@ -39,7 +34,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     } else {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-        $stmt = $conn->prepare("UPDATE user SET password = :password, tokencode = NULL, reset_token_expiration = NULL WHERE id = :id");
+        $stmt = $conn->prepare("UPDATE user SET password = :password, tokencode = NULL WHERE id = :id");
         $stmt->bindParam(':password', $hashedPassword);
         $stmt->bindParam(':id', $user['id']);
         $stmt->execute();
