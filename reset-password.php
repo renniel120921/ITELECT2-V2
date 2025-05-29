@@ -41,17 +41,43 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     } else {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
-        $update = $conn->prepare("UPDATE user SET password = :password, tokencode = NULL WHERE id = :id");
-        $update->bindParam(':password', $hashedPassword);
-        $update->bindParam(':id', $user['id']);
+        try {
+            // Start transaction for safety
+            $conn->beginTransaction();
 
-        if ($update->execute()) {
+            // 1. Clear the tokencode in user table
+            $clearToken = $conn->prepare("UPDATE user SET tokencode = NULL WHERE id = :id");
+            $clearToken->bindParam(':id', $user['id']);
+            $clearToken->execute();
+
+            // 2. Check if email exists in password_resets table
+            $checkExist = $conn->prepare("SELECT * FROM password_resets WHERE email = :email");
+            $checkExist->bindParam(':email', $user['email']);
+            $checkExist->execute();
+
+            if ($checkExist->rowCount() > 0) {
+                // Update existing record
+                $updateReset = $conn->prepare("UPDATE password_resets SET password = :password, updated_at = NOW() WHERE email = :email");
+                $updateReset->bindParam(':password', $hashedPassword);
+                $updateReset->bindParam(':email', $user['email']);
+                $updateReset->execute();
+            } else {
+                // Insert new record
+                $insertReset = $conn->prepare("INSERT INTO password_resets (email, password) VALUES (:email, :password)");
+                $insertReset->bindParam(':email', $user['email']);
+                $insertReset->bindParam(':password', $hashedPassword);
+                $insertReset->execute();
+            }
+
+            $conn->commit();
+
             $msg = "Password reset successful! <a href='login.php'>Login here</a>.";
             $success = true;
 
-            // Optional: Redirect after 3 seconds
+            // Redirect after 3 seconds
             header("refresh:3;url=login.php");
-        } else {
+        } catch (Exception $e) {
+            $conn->rollBack();
             $msg = "Something went wrong. Please try again.";
         }
     }
