@@ -1,18 +1,83 @@
 <?php
-require_once __DIR__ . '/dashboard/admin/authentication/admin-class.php';;
-$admin = new Admin();
+session_start();
+$conn = new mysqli('localhost', 'root', '', 'itelect2');
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $username = $_POST['username'] ?? '';
-    $email = $_POST['email'] ?? '';
-    $password = $_POST['password'] ?? '';
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $username = $conn->real_escape_string($_POST['username']);
+    $email = $conn->real_escape_string($_POST['email']);
+    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
 
-    if ($admin->register($username, $email, $password)) {
-        // redirect to verify-otp.php
-        header("Location: verify-otp.php?email=" . urlencode($email));
-        exit();
+    // Check if email exists
+    $check = $conn->query("SELECT * FROM user WHERE email='$email'");
+    if ($check->num_rows > 0) {
+        echo "Email already registered.";
+        exit;
+    }
+
+    // Generate OTP (6 digits)
+    $otp = rand(100000, 999999);
+
+    // Insert user with OTP and otp_verified = false
+    $sql = "INSERT INTO user (username, email, password, otp, otp_verified) VALUES ('$username', '$email', '$password', '$otp', 0)";
+    if ($conn->query($sql)) {
+        // Send OTP email
+        $subject = "Your OTP Code";
+        $message = "Your OTP code is: $otp";
+        $headers = "From: noreply@example.com\r\n";
+
+        if (mail($email, $subject, $message, $headers)) {
+            $_SESSION['email'] = $email;  // Save email in session to verify OTP
+            header("Location: verify_otp.php");
+            exit;
+        } else {
+            echo "Failed to send OTP email.";
+        }
     } else {
-        $error = "Registration failed. Email might already be used.";
+        echo "Error: " . $conn->error;
+    }
+}
+?>
+
+<form method="POST">
+    Username: <input type="text" name="username" required><br>
+    Email: <input type="email" name="email" required><br>
+    Password: <input type="password" name="password" required><br>
+    <button type="submit">Sign Up</button><?php
+session_start();
+$conn = new mysqli('localhost', 'root', '', 'itelect2');
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
+}
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $username = $conn->real_escape_string($_POST['username']);
+    $email = $conn->real_escape_string($_POST['email']);
+    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+
+    $check = $conn->query("SELECT * FROM user WHERE email='$email'");
+    if ($check->num_rows > 0) {
+        echo "<p class='error'>Email already registered.</p>";
+    } else {
+        $otp = rand(100000, 999999);
+        $sql = "INSERT INTO user (username, email, password, otp, otp_verified) VALUES ('$username', '$email', '$password', '$otp', 0)";
+        if ($conn->query($sql)) {
+            $subject = "Your OTP Code";
+            $message = "Your OTP code is: $otp";
+            $headers = "From: noreply@example.com\r\n";
+
+            if (mail($email, $subject, $message, $headers)) {
+                $_SESSION['email'] = $email;
+                header("Location: verify-otp.php");
+                exit;
+            } else {
+                echo "<p class='error'>Failed to send OTP email.</p>";
+            }
+        } else {
+            echo "<p class='error'>Error: " . $conn->error . "</p>";
+        }
     }
 }
 ?>
@@ -21,12 +86,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Sign Up</title>
 <style>
     body {
         font-family: Arial, sans-serif;
-        background: #f2f2f2;
+        background: #121212;
+        color: #eee;
         display: flex;
         justify-content: center;
         align-items: center;
@@ -34,96 +99,83 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         margin: 0;
     }
     .container {
-        background: white;
-        padding: 2rem 3rem;
+        background: #1f1f1f;
+        padding: 30px 40px;
         border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        box-shadow: 0 0 15px #00ff90;
         width: 350px;
+        text-align: center;
     }
     h2 {
-        text-align: center;
-        margin-bottom: 1.5rem;
-        color: #333;
-    }
-    label {
-        display: block;
-        margin-bottom: 0.4rem;
-        color: #555;
+        margin-bottom: 25px;
+        color: #00ff90;
+        font-weight: 700;
     }
     input[type="text"],
     input[type="email"],
     input[type="password"] {
         width: 100%;
-        padding: 0.6rem;
-        margin-bottom: 1.2rem;
-        border: 1px solid #ccc;
+        padding: 12px;
+        margin: 10px 0 20px 0;
+        border: none;
         border-radius: 4px;
-        box-sizing: border-box;
-        font-size: 1rem;
+        background: #2c2c2c;
+        color: #eee;
+        font-size: 14px;
+    }
+    input::placeholder {
+        color: #888;
     }
     button {
-        width: 100%;
-        padding: 0.7rem;
-        background-color: #007bff;
+        background-color: #00ff90;
         border: none;
-        color: white;
-        font-size: 1.1rem;
+        color: #121212;
+        padding: 12px 0;
+        width: 100%;
         border-radius: 4px;
+        font-weight: 700;
         cursor: pointer;
+        font-size: 16px;
         transition: background-color 0.3s ease;
     }
     button:hover {
-        background-color: #0056b3;
+        background-color: #00cc6a;
+    }
+    p {
+        margin-top: 20px;
+        font-size: 14px;
+    }
+    a {
+        color: #00ff90;
+        text-decoration: none;
+        font-weight: 600;
+    }
+    a:hover {
+        text-decoration: underline;
     }
     .error {
-        background: #f8d7da;
-        color: #842029;
-        padding: 0.7rem;
+        background-color: #ff3b3b;
+        padding: 10px;
         border-radius: 4px;
-        margin-bottom: 1rem;
-        border: 1px solid #f5c2c7;
-        font-size: 0.9rem;
-        text-align: center;
-    }
-    .login-link {
-        text-align: center;
-        margin-top: 1rem;
-        font-size: 0.9rem;
-        color: #555;
-    }
-    .login-link a {
-        color: #007bff;
-        text-decoration: none;
-    }
-    .login-link a:hover {
-        text-decoration: underline;
+        margin-bottom: 15px;
+        font-weight: 600;
     }
 </style>
 </head>
 <body>
 <div class="container">
     <h2>Create Account</h2>
-
-    <?php if (!empty($error)): ?>
-        <div class="error"><?= htmlspecialchars($error) ?></div>
-    <?php endif; ?>
-
-    <form method="POST" action="">
-        <label for="username">Username:</label>
-        <input type="text" name="username" id="username" required />
-
-        <label for="email">Email:</label>
-        <input type="email" name="email" id="email" required />
-
-        <label for="password">Password:</label>
-        <input type="password" name="password" id="password" required />
-
+    <form method="POST" autocomplete="off">
+        <input type="text" name="username" placeholder="Username" required />
+        <input type="email" name="email" placeholder="Email" required />
+        <input type="password" name="password" placeholder="Password" required />
         <button type="submit">Sign Up</button>
     </form>
-
-    <div class="login-link">
-        Already have an account? <a href="login.php">Log in here</a>
-    </div>
+    <p>Already have an account? <a href="login.php">Login here</a></p>
 </div>
 </body>
 </html>
+
+</form>
+<p>Already have an account? <a href="login.php">Login here</a></p>
+

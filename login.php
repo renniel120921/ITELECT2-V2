@@ -1,25 +1,26 @@
 <?php
-require_once 'dashboard/admin/authentication/admin-class.php';
-
-$admin = new Admin();
-
-$error = '';
-$success = '';
-
-// Show success message if redirected after OTP verification
-if (isset($_GET['verified']) && $_GET['verified'] == '1') {
-    $success = "Account successfully verified. You can now log in.";
+session_start();
+$conn = new mysqli('localhost', 'root', '', 'itelect2');
+if ($conn->connect_error) {
+    die("Connection failed: " . $conn->connect_error);
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = $_POST['email'] ?? '';
-    $password = $_POST['password'] ?? '';
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $email = $conn->real_escape_string($_POST['email']);
+    $password = $_POST['password'];
 
-    if ($admin->login($email, $password)) { // Assuming you have a login method
-        header("Location: dashboard.php");
-        exit();
+    $result = $conn->query("SELECT * FROM user WHERE email='$email' AND otp_verified=1");
+    if ($result->num_rows == 1) {
+        $user = $result->fetch_assoc();
+        if (password_verify($password, $user['password'])) {
+            echo "<p class='success'>Login successful! Welcome, " . htmlspecialchars($user['username']) . ".</p>";
+            // Set session here or redirect to dashboard
+            exit;
+        } else {
+            echo "<p class='error'>Incorrect password.</p>";
+        }
     } else {
-        $error = "Invalid email or password.";
+        echo "<p class='error'>User not found or email not verified.</p>";
     }
 }
 ?>
@@ -28,12 +29,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Login</title>
 <style>
     body {
         font-family: Arial, sans-serif;
-        background: #f2f2f2;
+        background: #121212;
+        color: #eee;
         display: flex;
         justify-content: center;
         align-items: center;
@@ -41,107 +42,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         margin: 0;
     }
     .container {
-        background: white;
-        padding: 2rem 3rem;
+        background: #1f1f1f;
+        padding: 30px 40px;
         border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        box-shadow: 0 0 15px #00ff90;
         width: 350px;
-        box-sizing: border-box;
+        text-align: center;
     }
     h2 {
-        text-align: center;
-        margin-bottom: 1.5rem;
-        color: #333;
-    }
-    label {
-        display: block;
-        margin-bottom: 0.4rem;
-        color: #555;
+        margin-bottom: 25px;
+        color: #00ff90;
+        font-weight: 700;
     }
     input[type="email"],
     input[type="password"] {
         width: 100%;
-        padding: 0.6rem;
-        margin-bottom: 1.2rem;
-        border: 1px solid #ccc;
+        padding: 12px;
+        margin: 10px 0 20px 0;
+        border: none;
         border-radius: 4px;
-        box-sizing: border-box;
-        font-size: 1rem;
+        background: #2c2c2c;
+        color: #eee;
+        font-size: 14px;
+    }
+    input::placeholder {
+        color: #888;
     }
     button {
-        width: 100%;
-        padding: 0.7rem;
-        background-color: #007bff;
+        background-color: #00ff90;
         border: none;
-        color: white;
-        font-size: 1.1rem;
+        color: #121212;
+        padding: 12px 0;
+        width: 100%;
         border-radius: 4px;
+        font-weight: 700;
         cursor: pointer;
+        font-size: 16px;
         transition: background-color 0.3s ease;
     }
     button:hover {
-        background-color: #0056b3;
+        background-color: #00cc6a;
+    }
+    p {
+        margin-top: 20px;
+        font-size: 14px;
+    }
+    a {
+        color: #00ff90;
+        text-decoration: none;
+        font-weight: 600;
+    }
+    a:hover {
+        text-decoration: underline;
     }
     .error {
-        background: #f8d7da;
-        color: #842029;
-        padding: 0.7rem;
+        background-color: #ff3b3b;
+        padding: 10px;
         border-radius: 4px;
-        margin-bottom: 1rem;
-        border: 1px solid #f5c2c7;
-        font-size: 0.9rem;
-        text-align: center;
+        margin-bottom: 15px;
+        font-weight: 600;
     }
     .success {
-        background: #d4edda;
-        color: #155724;
-        padding: 0.7rem;
+        background-color: #00cc6a;
+        padding: 10px;
         border-radius: 4px;
-        margin-bottom: 1rem;
-        border: 1px solid #c3e6cb;
-        font-size: 0.9rem;
-        text-align: center;
-    }
-    .signup-link {
-        text-align: center;
-        margin-top: 1rem;
-        font-size: 0.9rem;
-        color: #555;
-    }
-    .signup-link a {
-        color: #007bff;
-        text-decoration: none;
-    }
-    .signup-link a:hover {
-        text-decoration: underline;
+        margin-bottom: 15px;
+        font-weight: 600;
     }
 </style>
 </head>
 <body>
 <div class="container">
     <h2>Login</h2>
-
-    <?php if (!empty($success)): ?>
-        <div class="success"><?= htmlspecialchars($success) ?></div>
-    <?php endif; ?>
-
-    <?php if (!empty($error)): ?>
-        <div class="error"><?= htmlspecialchars($error) ?></div>
-    <?php endif; ?>
-
-    <form method="POST" action="">
-        <label for="email">Email:</label>
-        <input type="email" name="email" id="email" required autocomplete="email" />
-
-        <label for="password">Password:</label>
-        <input type="password" name="password" id="password" required autocomplete="current-password" />
-
-        <button type="submit">Log In</button>
+    <form method="POST" autocomplete="off">
+        <input type="email" name="email" placeholder="Email" required />
+        <input type="password" name="password" placeholder="Password" required />
+        <button type="submit">Login</button>
     </form>
-
-    <div class="signup-link">
-        Don't have an account? <a href="signup.php">Sign up here</a>
-    </div>
+    <p>Don't have an account? <a href="signup.php">Sign up here</a></p>
 </div>
 </body>
 </html>

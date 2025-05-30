@@ -12,7 +12,7 @@ $local_config = [
 
 // PRODUCTION SETTINGS - update with your real production creds
 $production_config = [
-    'host'     => 'host',
+    'host'     => 'localhost',
     'port'     => '3306',
     'dbname'   => 'itelect2',
     'username' => 'root',
@@ -28,3 +28,6 @@ if ($server_name === 'localhost' || $server_addr === '127.0.0.1' || $server_name
 } else {
     $config = $production_config;
 }
+
+// Return the config array so it can be imported by other scripts
+return $config;
