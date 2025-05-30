@@ -15,7 +15,7 @@ class ADMIN
 
     public function __construct()
     {
-        session_start(); // make sure session is started here
+        session_start();
         $this->settings = new SystemConfig();
         $this->smtp_email = $this->settings->getSmtpEmail();
         $this->smtp_password = $this->settings->getSmtpPassword();
@@ -24,7 +24,6 @@ class ADMIN
         $this->conn = $database->dbConnection();
     }
 
-    // Send OTP for verification
     public function sendOtp($otp, $email)
     {
         if (empty($email)) {
@@ -32,7 +31,6 @@ class ADMIN
             exit();
         }
 
-        // Check if email exists already
         $stmt = $this->runQuery("SELECT * FROM user WHERE email = :email");
         $stmt->execute([":email" => $email]);
 
@@ -42,10 +40,8 @@ class ADMIN
         }
 
         $_SESSION["OTP"] = $otp;
-
         $subject = "OTP Verification";
         $message = $this->generateOtpEmailBody($email, $otp);
-
         $this->send_email($email, $message, $subject, $this->smtp_email, $this->smtp_password);
 
         echo "<script>alert('We sent the OTP to $email!'); window.location.href='../../../verify-otp.php';</script>";
@@ -61,42 +57,16 @@ class ADMIN
             <meta name='viewport' content='width=device-width, initial-scale=1.0'>
             <title>OTP VERIFICATION</title>
             <style>
-                body {
-                    font-family: Arial, Helvetica, sans-serif;
-                    background-color: #f5f5f5;
-                    margin: 0;
-                    padding: 0;
-                }
-                .container{
-                    max-width: 600px;
-                    margin: 0 auto;
-                    padding: 30px;
-                    background-color: #ffffff;
-                    border-radius: 4px;
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                }
-                h1 {
-                    color: #333333;
-                    font-size: 24px;
-                    margin-bottom: 20px;
-                }
-                p {
-                    color: #666666;
-                    font-size: 16px;
-                    margin-bottom: 10px;
-                }
-                .logo {
-                    display: block;
-                    text-align: center;
-                    margin-bottom: 30px;
-                }
+                body { font-family: Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 0 auto; padding: 30px; background-color: #fff; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                h1 { color: #333; font-size: 24px; margin-bottom: 20px; }
+                p { color: #666; font-size: 16px; margin-bottom: 10px; }
+                .logo { text-align: center; margin-bottom: 30px; }
             </style>
         </head>
         <body>
             <div class='container'>
-                <div class='logo'>
-                    <img src='cid:logo' alt='logo' width='150'>
-                </div>
+                <div class='logo'><img src='cid:logo' alt='logo' width='150'></div>
                 <h1>OTP VERIFICATION</h1>
                 <p>Hello, $email</p>
                 <p>Your OTP is: <strong>$otp</strong></p>
@@ -104,11 +74,9 @@ class ADMIN
                 <p>Thank you!</p>
             </div>
         </body>
-        </html>
-        ";
+        </html>";
     }
 
-    // Verify OTP and add admin user
     public function verifyOtp($username, $email, $password, $tokencode, $otp, $csrf_token)
     {
         if (empty($otp) || !isset($_SESSION["OTP"])) {
@@ -121,20 +89,16 @@ class ADMIN
             exit;
         }
 
-        // OTP is valid, unset session OTP
         unset($_SESSION["OTP"]);
 
-        // Add admin user now
         $this->addAdmin($csrf_token, $username, $email, $password);
 
         $subject = "Verification Success";
         $message = $this->generateWelcomeEmailBody($email);
-
         $this->send_email($email, $message, $subject, $this->smtp_email, $this->smtp_password);
 
         echo "<script>alert('Thank you! Your account is verified.'); window.location.href='../../../';</script>";
 
-        // Clear stored session form data after successful verification
         unset($_SESSION["not_verify_username"], $_SESSION["not_verify_email"], $_SESSION["not_verify_password"]);
     }
 
@@ -148,42 +112,16 @@ class ADMIN
             <meta name='viewport' content='width=device-width, initial-scale=1.0'>
             <title>Verification Success</title>
             <style>
-                body {
-                    font-family: Arial, Helvetica, sans-serif;
-                    background-color: #f5f5f5;
-                    margin: 0;
-                    padding: 0;
-                }
-                .container{
-                    max-width: 600px;
-                    margin: 0 auto;
-                    padding: 30px;
-                    background-color: #ffffff;
-                    border-radius: 4px;
-                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-                }
-                h1 {
-                    color: #333333;
-                    font-size: 24px;
-                    margin-bottom: 20px;
-                }
-                p {
-                    color: #666666;
-                    font-size: 16px;
-                    margin-bottom: 10px;
-                }
-                .logo {
-                    display: block;
-                    text-align: center;
-                    margin-bottom: 30px;
-                }
+                body { font-family: Arial, sans-serif; background-color: #f5f5f5; margin: 0; padding: 0; }
+                .container { max-width: 600px; margin: 0 auto; padding: 30px; background-color: #fff; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+                h1 { color: #333; font-size: 24px; margin-bottom: 20px; }
+                p { color: #666; font-size: 16px; margin-bottom: 10px; }
+                .logo { text-align: center; margin-bottom: 30px; }
             </style>
         </head>
         <body>
             <div class='container'>
-                <div class='logo'>
-                    <img src='cid:logo' alt='logo' width='150'>
-                </div>
+                <div class='logo'><img src='cid:logo' alt='logo' width='150'></div>
                 <h1>Welcome</h1>
                 <p>Hello, <strong>$email</strong></p>
                 <p>Welcome to Mikko System</p>
@@ -191,14 +129,11 @@ class ADMIN
                 <p>Thank you!</p>
             </div>
         </body>
-        </html>
-        ";
+        </html>";
     }
 
-    // Add admin user
     public function addAdmin($csrf_token, $username, $email, $password)
     {
-        // Check email exists
         $stmt = $this->runQuery("SELECT * FROM user WHERE email = :email");
         $stmt->execute([":email" => $email]);
         if ($stmt->rowCount() > 0) {
@@ -206,7 +141,6 @@ class ADMIN
             exit;
         }
 
-        // CSRF validation
         if (!isset($csrf_token) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrf_token)) {
             echo "<script>alert('Invalid CSRF Token!'); window.location.href='../../../';</script>";
             exit;
@@ -214,7 +148,6 @@ class ADMIN
 
         unset($_SESSION['csrf_token']);
 
-        // Use password_hash instead of md5
         $hash_password = password_hash($password, PASSWORD_DEFAULT);
 
         $stmt = $this->runQuery("INSERT INTO user (username, email, password) VALUES (:username, :email, :password)");
@@ -233,11 +166,9 @@ class ADMIN
         }
     }
 
-    // Admin sign-in using email and password
     public function adminSignin($email, $password, $csrf_token)
     {
         try {
-            // CSRF check
             if (!isset($csrf_token) || !isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrf_token)) {
                 echo "<script>alert('Invalid CSRF Token!'); window.location.href='../../../';</script>";
                 exit;
@@ -252,7 +183,6 @@ class ADMIN
                 $activity = "Has Successfully signed in";
                 $user_id = $userRow['id'];
                 $this->logs($activity, $user_id);
-
                 $_SESSION['adminSession'] = $user_id;
 
                 echo "<script>alert('Welcome!'); window.location.href='../';</script>";
@@ -266,7 +196,6 @@ class ADMIN
         }
     }
 
-    // Logging user activity
     public function logs($activity, $user_id)
     {
         $stmt = $this->runQuery("INSERT INTO logs (activity, user_id) VALUES (:activity, :user_id)");
@@ -276,24 +205,20 @@ class ADMIN
         ]);
     }
 
-    // Run PDO query with error handling
     public function runQuery($sql)
     {
         try {
-            $stmt = $this->conn->prepare($sql);
-            return $stmt;
+            return $this->conn->prepare($sql);
         } catch (PDOException $e) {
             die("Query error: " . $e->getMessage());
         }
     }
 
-    // Send email using PHPMailer
     public function send_email($to, $message, $subject, $from, $password)
     {
         $mail = new PHPMailer(true);
 
         try {
-            //Server settings
             $mail->isSMTP();
             $mail->Host = 'smtp.gmail.com';
             $mail->SMTPAuth = true;
@@ -304,18 +229,20 @@ class ADMIN
 
             $mail->setFrom($from, 'Mikko System');
             $mail->addAddress($to);
-
-            // Content
             $mail->isHTML(true);
             $mail->Subject = $subject;
             $mail->Body = $message;
 
-            // Add embedded logo image if you have one
-            // $mail->addEmbeddedImage('/path/to/logo.png', 'logo');
+            // Attach logo as inline image if available
+            $logoPath = __DIR__ . '/../../../assets/img/logo.png';
+            if (file_exists($logoPath)) {
+                $mail->addEmbeddedImage($logoPath, 'logo', 'logo.png');
+            }
 
             $mail->send();
         } catch (Exception $e) {
-            error_log("Message could not be sent. Mailer Error: {$mail->ErrorInfo}");
+            error_log("Mailer Error: " . $mail->ErrorInfo);
         }
     }
 }
+?>
