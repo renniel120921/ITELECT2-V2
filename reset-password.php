@@ -14,7 +14,7 @@ class PasswordReset
 
     public function verifyOtpAndResetPassword($email, $otp, $new_password)
     {
-        // Check if OTP valid and not expired
+        // Check if OTP is valid and not expired
         $stmt = $this->conn->prepare("SELECT * FROM password_resets WHERE email = :email AND otp = :otp AND expires_at > NOW()");
         $stmt->execute([':email' => $email, ':otp' => $otp]);
         $resetData = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -43,12 +43,7 @@ class PasswordReset
     }
 }
 
-// Check if email param is present in URL
-if (empty($_GET['email'])) {
-    echo "<script>alert('Missing email parameter. Please request a new OTP.'); window.location.href='forgot-password.php';</script>";
-    exit;
-}
-
+// Process form submission
 if (isset($_POST['btn-reset'])) {
     $email = trim($_POST['email']);
     $otp = trim($_POST['otp']);
@@ -64,7 +59,6 @@ if (isset($_POST['btn-reset'])) {
     $passwordReset->verifyOtpAndResetPassword($email, $otp, $new_password);
 }
 ?>
-
 <style>
 body {
   font-family: Arial, sans-serif;
