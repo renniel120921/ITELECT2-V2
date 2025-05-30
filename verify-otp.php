@@ -1,44 +1,62 @@
 <?php
 session_start();
-require 'config/db.php';
+require_once 'config/db.php';      // your PDO connection
 
-if (!isset($_SESSION['email_for_otp'])) {
-    header("Location: signup.php");
+if (!isset($_SESSION['user_id'])) {
+    // No user to verify, redirect to signup or login
+    header("Location: signup_form.php");
     exit;
 }
 
-$email = $_SESSION['email_for_otp'];
-$error = '';
+$userId = $_SESSION['user_id'];
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $entered_otp = trim($_POST['otp']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $inputOtp = trim($_POST['otp'] ?? '');
 
-    $stmt = $pdo->prepare("SELECT * FROM user WHERE email = ? AND otp = ? AND otp_expiry > NOW() AND status = 0");
-    $stmt->execute([$email, $entered_otp]);
+    if (!$inputOtp) {
+        $_SESSION['error'] = "Please enter the OTP.";
+        header("Location: verify_otp_form.php");
+        exit;
+    }
+
+    // Fetch user OTP and expiry from DB
+    $stmt = $pdo->prepare("SELECT otp, otp_expiry FROM user WHERE id = ? AND status = 0");
+    $stmt->execute([$userId]);
     $user = $stmt->fetch();
 
-    if ($user) {
-        // OTP correct & valid
-        $stmt_update = $pdo->prepare("UPDATE user SET status = 1, otp = NULL, otp_expiry = NULL WHERE email = ?");
-        $stmt_update->execute([$email]);
-        unset($_SESSION['email_for_otp']);
-        header("Location: login.php?verified=1");
+    if (!$user) {
+        $_SESSION['error'] = "Invalid request or already verified.";
+        header("Location: signup_form.php");
+        exit;
+    }
+
+    // Check expiry
+    if (new DateTime() > new DateTime($user['otp_expiry'])) {
+        $_SESSION['error'] = "OTP expired. Please sign up again.";
+        // Delete unverified user record to force fresh signup
+        $pdo->prepare("DELETE FROM user WHERE id = ?")->execute([$userId]);
+        session_destroy();
+        header("Location: signup_form.php");
+        exit;
+    }
+
+    // Check OTP match
+    if ($inputOtp == $user['otp']) {
+        // Update user status to active (1), clear otp fields
+        $stmt = $pdo->prepare("UPDATE user SET status = 1, otp = NULL, otp_expiry = NULL WHERE id = ?");
+        $stmt->execute([$userId]);
+
+        $_SESSION['message'] = "Your account has been verified! You can now log in.";
+        unset($_SESSION['user_id']);  // clear signup session
+
+        header("Location: login_form.php");
         exit;
     } else {
-        $error = "Invalid or expired OTP.";
+        $_SESSION['error'] = "Incorrect OTP. Try again.";
+        header("Location: verify_otp_form.php");
+        exit;
     }
+} else {
+    header("Location: verify_otp_form.php");
+    exit;
 }
-?>
-
-<!DOCTYPE html>
-<html>
-<head><title>Verify OTP</title></head>
-<body>
-<h2>Enter OTP sent to <?= htmlspecialchars($email) ?></h2>
-<?php if ($error) echo "<p style='color:red;'>$error</p>"; ?>
-<form method="post" action="">
-    OTP: <input type="text" name="otp" maxlength="6" required><br><br>
-    <button type="submit">Verify</button>
-</form>
-</body>
-</html>
