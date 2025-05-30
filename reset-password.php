@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once __DIR__.'/../../../database/dbconnection.php';
+require_once 'database/dbconnection.php';
 
 class PasswordReset
 {
