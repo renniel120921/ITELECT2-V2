@@ -1,141 +1,118 @@
 <?php
-require_once __DIR__ . '/../../../database/dbconnection.php';
-// include_once __DIR__ . '/../../../config/settings-configuration.php';
-include_once "../../../config/settings-configuration.php";
+require_once 'settings-configuration.php';
+require_once 'vendor/autoload.php'; // PHPMailer
 
-class ADMIN
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+class Admin
 {
     private $conn;
+
     public function __construct()
     {
         $database = new Database();
-        $this->conn =  $database->dbConnection();
+        $this->conn = $database->dbConnection();
     }
 
-    public function addAdmin($csrf_token, $username, $email, $password)
+    // 📩 Register user with OTP verification
+    public function register($username, $email, $password)
     {
-        $stmt = $this->conn->prepare("SELECT * FROM user WHERE email =:email");
-        $stmt->execute(array(":email" => $email));
+        $otp = rand(100000, 999999);
+        $otp_expiry = date('Y-m-d H:i:s', strtotime('+5 minutes'));
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+        $token = bin2hex(random_bytes(16));
 
-        if($stmt->rowCount() > 0){
-            echo "<script>alert('Email already exists!'); window.location.href='../../../';</script>";
-            exit;
-        }
+        $query = "INSERT INTO user (username, email, password, status, tokencode, created_at, otp, otp_expiry)
+                  VALUES (:username, :email, :password, 'inactive', :token, NOW(), :otp, :otp_expiry)";
 
-        if(!isset($csrf_token) || !hash_equals($_SESSION['csrf_token'], $csrf_token)){
-            echo "<script>alert('Invalid CSRF Token!'); window.location.href='../../../';</script>";
-            exit;
-        }
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':username', $username);
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':password', $hashed_password);
+        $stmt->bindParam(':token', $token);
+        $stmt->bindParam(':otp', $otp);
+        $stmt->bindParam(':otp_expiry', $otp_expiry);
 
-        unset($_SESSION['csrf_token']);
-
-        $hash_password = md5($password);
-
-        $stmt = $this->runQuery("INSERT INTO user (username, email, password) VALUES (:username, :email, :password)");
-        $exec = $stmt->execute(array(
-            ":username" => $username,
-            ":email" => $email,
-            ":password" => $hash_password
-        ));
-
-        if($exec){
-            echo "<script>alert('Admin Added Successfully!'); window.location.href='../../../';</script>";
-            exit;
-        } else {
-            echo "<script>alert('Error Adding Admin!'); window.location.href='../../../';</script>";
-            exit;
-        }
-    }
-
-    public function adminSignin($email, $password, $csrf_token)
-    {
-        try{
-            if(!isset($csrf_token) || !hash_equals($_SESSION['csrf_token'], $csrf_token)){
-                echo "<script>alert('Invalid CSRF Token!'); window.location.href='../../../';</script>";
-                exit;
-            }
-            unset($_SESSION['csrf_token']);
-
-            $stmt = $this->conn->prepare("SELECT * FROM user WHERE email = :email");
-            $stmt->execute(array(":email" => $email));
-            $userRow = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if($stmt->rowCount() == 1 && $userRow['password'] == md5($password)){
-                $activity = "Has Successfully signed in";
-                $user_id = $userRow['id'];
-                $this->logs($activity, $user_id);
-
-                $_SESSION['adminSession'] = $user_id;
-
-                echo "<script>alert('Welcome!'); window.location.href='../';</script>";
-                exit;
-            }else{
-                echo "<script>alert('Invalid Credentials!'); window.location.href='../../../';</script>";
-                exit;
-            }
-
-        }catch(PDOException $ex){
-            echo $ex->getMessage();
-        }
-    }
-
-    public function adminSignout()
-    {
-        unset($_SESSION['adminSession']);
-        echo "<script>alert('Sign Out Successfully!'); window.location.href='../../../';</script>";
-        exit;
-    }
-
-    public function logs($activity, $user_id)
-    {
-        $stmt = $this->conn->prepare("INSERT INTO logs (user_id, activity) VALUES (:user_id, :activity)");
-        $stmt->execute(array(
-            ":user_id" => $user_id,
-            ":activity" => $activity
-        ));
-    }
-
-    public function isUserLoggedIn()
-    {
-        if(isset($_SESSION['adminSession'])){
+        if ($stmt->execute()) {
+            $user_id = $this->conn->lastInsertId();
+            $emailSent = $this->sendOtpEmail($email, $otp);
+            $this->logActivity($user_id, "OTP sent for registration" . ($emailSent ? "" : " (FAILED)"));
             return true;
         }
+        return false;
     }
 
-    public function redirect()
+    // ✅ Verify OTP and activate user
+    public function verifyOtp($email, $enteredOtp)
     {
-        echo "<script>alert('Admin must logged in first!'); window.location.href='../../../';</script>";
-        exit;
+        $query = "SELECT * FROM user WHERE email = :email AND status = 'inactive'";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':email', $email);
+        $stmt->execute();
+
+        if ($stmt->rowCount() > 0) {
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            $current_time = date('Y-m-d H:i:s');
+
+            if ($user['otp'] == $enteredOtp && $current_time <= $user['otp_expiry']) {
+                $update = "UPDATE user SET status = 'active', otp = NULL, otp_expiry = NULL WHERE email = :email";
+                $stmtUpdate = $this->conn->prepare($update);
+                $stmtUpdate->bindParam(':email', $email);
+                $stmtUpdate->execute();
+
+                $this->logActivity($user['id'], "OTP verified and account activated");
+                return true;
+            }
+        }
+
+        return false;
     }
 
-    public function runQuery($sql)
+    // ✉️ Send OTP email
+    private function sendOtpEmail($email, $otp)
     {
-        $stmt = $this->conn->prepare($sql);
-        return $stmt;
+        $mail = new PHPMailer(true);
+        try {
+            // SMTP settings
+            $mail->isSMTP();
+            $mail->Host = 'smtp.gmail.com';
+            $mail->SMTPAuth = true;
+            $mail->Username = 'rennielsalazar948@gmail.com';
+
+            // Use environment variable for password
+            $smtpPassword = getenv('SMTP_PASSWORD');
+            if (!$smtpPassword) {
+                throw new Exception('SMTP password not set in environment.');
+            }
+            $mail->Password = $smtpPassword;
+
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port = 587;
+
+            $mail->setFrom('rennielsalazar948@gmail.com', 'Welcome Client');
+            $mail->addAddress($email);
+
+            $mail->isHTML(true);
+            $mail->Subject = 'Your OTP Code';
+            $mail->Body    = "Your OTP code is: <strong>$otp</strong>. It will expire in 5 minutes.";
+
+            $mail->send();
+            return true;
+        } catch (Exception $e) {
+            // Log or handle error here if needed
+            error_log("Mailer Error: " . $mail->ErrorInfo);
+            return false;
+        }
+    }
+
+    // 📝 Log activity
+    private function logActivity($user_id, $activity)
+    {
+        $query = "INSERT INTO logs (user_id, activity, created_at) VALUES (:user_id, :activity, NOW())";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':user_id', $user_id);
+        $stmt->bindParam(':activity', $activity);
+        $stmt->execute();
     }
 }
-
-if(isset($_POST['btn-signup'])){
-    $csrf_token = trim($_POST['csrf_token']);
-    $username = trim($_POST['username']);
-    $email = trim($_POST['email']);
-    $password = trim($_POST['password']);
-
-    $addAdmin = new ADMIN();
-    $addAdmin->addAdmin($csrf_token, $username, $email, $password);
-}
-
-if(isset($_POST['btn-signin'])){
-    $csrf_token = trim($_POST['csrf_token']);
-    $email = trim($_POST['email']);
-    $password = trim($_POST['password']);
-
-    $adminSignin = new ADMIN();
-    $adminSignin->adminSignin($email, $password, $csrf_token);
-}
-
-if(isset($_GET['admin_signout'])){
-    $adminSignout = new ADMIN();
-    $adminSignout->adminSignout();
-}
-?>
