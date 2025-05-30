@@ -5,22 +5,31 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
+$error = '';
+$success = '';
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $email = $conn->real_escape_string($_POST['email']);
     $password = $_POST['password'];
 
     $result = $conn->query("SELECT * FROM user WHERE email='$email' AND otp_verified=1");
-    if ($result->num_rows == 1) {
+    if ($result && $result->num_rows == 1) {
         $user = $result->fetch_assoc();
         if (password_verify($password, $user['password'])) {
-            echo "<p class='success'>Login successful! Welcome, " . htmlspecialchars($user['username']) . ".</p>";
-            // Set session here or redirect to dashboard
+            // Set session variables
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['username'] = $user['username'];
+            $_SESSION['email'] = $user['email'];
+            $_SESSION['logged_in'] = true;
+
+            // Redirect to dashboard
+            header("Location: dashboard/admin/dashboard.php");
             exit;
         } else {
-            echo "<p class='error'>Incorrect password.</p>";
+            $error = "Incorrect password.";
         }
     } else {
-        echo "<p class='error'>User not found or email not verified.</p>";
+        $error = "User not found or email not verified.";
     }
 }
 ?>
@@ -114,6 +123,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <body>
 <div class="container">
     <h2>Login</h2>
+
+    <?php if($error): ?>
+        <p class="error"><?php echo htmlspecialchars($error); ?></p>
+    <?php elseif($success): ?>
+        <p class="success"><?php echo htmlspecialchars($success); ?></p>
+    <?php endif; ?>
+
     <form method="POST" autocomplete="off">
         <input type="email" name="email" placeholder="Email" required />
         <input type="password" name="password" placeholder="Password" required />

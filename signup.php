@@ -5,83 +5,86 @@ if ($conn->connect_error) {
     die("Connection failed: " . $conn->connect_error);
 }
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $username = $conn->real_escape_string($_POST['username']);
-    $email = $conn->real_escape_string($_POST['email']);
-    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+// Error message variable
+$error = "";
 
-    // Check if email exists
-    $check = $conn->query("SELECT * FROM user WHERE email='$email'");
-    if ($check->num_rows > 0) {
-        echo "Email already registered.";
-        exit;
-    }
+// Load PHPMailer
+require 'vendor/autoload.php';
 
-    // Generate OTP (6 digits)
-    $otp = rand(100000, 999999);
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
-    // Insert user with OTP and otp_verified = false
-    $sql = "INSERT INTO user (username, email, password, otp, otp_verified) VALUES ('$username', '$email', '$password', '$otp', 0)";
-    if ($conn->query($sql)) {
-        // Send OTP email
-        $subject = "Your OTP Code";
-        $message = "Your OTP code is: $otp";
-        $headers = "From: noreply@example.com\r\n";
 
-        if (mail($email, $subject, $message, $headers)) {
-            $_SESSION['email'] = $email;  // Save email in session to verify OTP
-            header("Location: verify_otp.php");
-            exit;
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Sanitize inputs
+    $username = htmlspecialchars(trim($_POST['username']));
+    $email = strtolower(trim($_POST['email']));
+    $password = $_POST['password'];
+
+    // Validation
+    if (empty($username) || strlen($username) < 3) {
+        $error = "Username must be at least 3 characters.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Invalid email format.";
+    } elseif (strlen($password) < 6) {
+        $error = "Password must be at least 6 characters.";
+    } else {
+        // Check if email exists
+        $stmt = $conn->prepare("SELECT id FROM user WHERE email = ?");
+        $stmt->bind_param("s", $email);
+        $stmt->execute();
+        $stmt->store_result();
+
+        if ($stmt->num_rows > 0) {
+            $error = "Email is already registered.";
         } else {
-            echo "Failed to send OTP email.";
-        }
-    } else {
-        echo "Error: " . $conn->error;
-    }
-}
-?>
+            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+            $otp = rand(100000, 999999);
 
-<form method="POST">
-    Username: <input type="text" name="username" required><br>
-    Email: <input type="email" name="email" required><br>
-    Password: <input type="password" name="password" required><br>
-    <button type="submit">Sign Up</button><?php
-session_start();
-$conn = new mysqli('localhost', 'root', '', 'itelect2');
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
+            // Insert new user
+            $insert_stmt = $conn->prepare("INSERT INTO user (username, email, password, otp, otp_verified) VALUES (?, ?, ?, ?, 0)");
+            $insert_stmt->bind_param("sssi", $username, $email, $hashed_password, $otp);
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $username = $conn->real_escape_string($_POST['username']);
-    $email = $conn->real_escape_string($_POST['email']);
-    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+            if ($insert_stmt->execute()) {
+                // Send OTP via Email
+                $mail = new PHPMailer(true);
 
-    $check = $conn->query("SELECT * FROM user WHERE email='$email'");
-    if ($check->num_rows > 0) {
-        echo "<p class='error'>Email already registered.</p>";
-    } else {
-        $otp = rand(100000, 999999);
-        $sql = "INSERT INTO user (username, email, password, otp, otp_verified) VALUES ('$username', '$email', '$password', '$otp', 0)";
-        if ($conn->query($sql)) {
-            $subject = "Your OTP Code";
-            $message = "Your OTP code is: $otp";
-            $headers = "From: noreply@example.com\r\n";
+                try {
+                    $mail->isSMTP();
+                    $mail->Host       = 'smtp.gmail.com';
+                    $mail->SMTPAuth   = true;
+                    $mail->Username   = 'rennielsalazar948@gmail.com'; // Your Gmail
+                    $mail->Password   = 'rfel kxiz jhip nobw'; // App Password
+                    $mail->SMTPSecure = 'tls';
+                    $mail->Port       = 587;
 
-            if (mail($email, $subject, $message, $headers)) {
-                $_SESSION['email'] = $email;
-                header("Location: verify-otp.php");
-                exit;
+                    $mail->setFrom('rennielsalazar948@gmail.com', 'ITELECT2');
+                    $mail->addAddress($email);
+                    $mail->isHTML(false);
+                    $mail->Subject = "Your OTP Code";
+                    $mail->Body    = "Your OTP code is: $otp";
+
+                    $mail->send();
+
+                    $_SESSION['email'] = $email;
+                    header("Location: verify-otp.php");
+                    exit;
+                } catch (Exception $e) {
+                    $error = "OTP email failed to send. Error: " . $mail->ErrorInfo;
+                }
             } else {
-                echo "<p class='error'>Failed to send OTP email.</p>";
+                $error = "Database insert error: " . $insert_stmt->error;
             }
-        } else {
-            echo "<p class='error'>Error: " . $conn->error . "</p>";
+
+            $insert_stmt->close();
         }
+
+        $stmt->close();
     }
 }
-?>
 
+$conn->close();
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -165,17 +168,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <body>
 <div class="container">
     <h2>Create Account</h2>
+    <?php if (!empty($error)): ?>
+        <div class="error"><?php echo htmlspecialchars($error); ?></div>
+    <?php endif; ?>
     <form method="POST" autocomplete="off">
         <input type="text" name="username" placeholder="Username" required />
         <input type="email" name="email" placeholder="Email" required />
-        <input type="password" name="password" placeholder="Password" required />
+        <input type="password" name="password" placeholder="Password (min 6 chars)" required minlength="6" />
         <button type="submit">Sign Up</button>
     </form>
     <p>Already have an account? <a href="login.php">Login here</a></p>
 </div>
 </body>
 </html>
-
-</form>
-<p>Already have an account? <a href="login.php">Login here</a></p>
-
