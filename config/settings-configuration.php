@@ -1,16 +1,13 @@
 <?php
-// settings-configuration.php
-
 // LOCALHOST SETTINGS
 $local_config = [
     'host'     => 'localhost',
-    'port'     => '3306',      // Make sure this is the port your MySQL runs on
+    'port'     => '3306',      
     'dbname'   => 'itelect2',
     'username' => 'root',
     'password' => ''
 ];
 
-// PRODUCTION SETTINGS - update with your real production creds
 $production_config = [
     'host'     => 'localhost',
     'port'     => '3306',
@@ -29,5 +26,4 @@ if ($server_name === 'localhost' || $server_addr === '127.0.0.1' || $server_name
     $config = $production_config;
 }
 
-// Return the config array so it can be imported by other scripts
 return $config;

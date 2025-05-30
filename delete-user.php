@@ -1,21 +1,54 @@
 <?php
-$conn = new mysqli('localhost', 'root', '', 'itelect2');
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-}
-
 $message = "";
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $email = $conn->real_escape_string($_POST['email']);
+try {
+    $pdo = new PDO('mysql:host=localhost;dbname=itelect2;charset=utf8mb4', 'root', '', [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES => false,
+    ]);
+} catch (PDOException $e) {
+    die("Database connection failed: " . $e->getMessage());
+}
 
-    $result = $conn->query("SELECT * FROM user WHERE email='$email'");
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $email = $_POST['email'] ?? '';
 
-    if ($result->num_rows > 0) {
-        $conn->query("DELETE FROM user WHERE email='$email'");
-        $message = "User with email '$email' has been deleted.";
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $message = "Invalid email format.";
     } else {
-        $message = "No user found with email '$email'.";
+        // Find user by email
+        $stmt = $pdo->prepare("SELECT id FROM user WHERE email = ?");
+        $stmt->execute([$email]);
+        $user = $stmt->fetch();
+
+        if ($user) {
+            $userId = $user['id'];
+
+            try {
+                // Begin transaction
+                $pdo->beginTransaction();
+
+                // Delete logs related to user
+                $stmtDeleteLogs = $pdo->prepare("DELETE FROM logs WHERE user_id = ?");
+                $stmtDeleteLogs->execute([$userId]);
+
+                // Delete user
+                $stmtDeleteUser = $pdo->prepare("DELETE FROM user WHERE id = ?");
+                $stmtDeleteUser->execute([$userId]);
+
+                // Commit transaction
+                $pdo->commit();
+
+                $message = "User with email '$email' and related logs have been deleted.";
+            } catch (Exception $e) {
+                // Rollback on error
+                $pdo->rollBack();
+                $message = "Failed to delete user: " . $e->getMessage();
+            }
+        } else {
+            $message = "No user found with email '$email'.";
+        }
     }
 }
 ?>
@@ -34,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 </head>
 <body>
     <h2>Delete User by Email (For Testing Only!)</h2>
-    <form method="POST">
+    <form method="POST" autocomplete="off">
         <input type="email" name="email" placeholder="Enter email to delete" required />
         <br />
         <button type="submit">Delete User</button>

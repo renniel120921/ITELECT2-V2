@@ -1,6 +1,6 @@
 <?php
-require_once 'config/settings-configuration.php';  // adjust path if needed
-require_once 'database/dbconnection.php';          // adjust path if needed
+require_once 'config/settings-configuration.php';
+require_once 'database/dbconnection.php';          
 
 class Admin
 {
