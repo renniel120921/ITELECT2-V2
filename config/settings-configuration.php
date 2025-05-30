@@ -2,14 +2,24 @@
 // settings-configuration.php
 
 // LOCALHOST SETTINGS
-$config = [
+$local_config = [
     'host'     => 'localhost',
-    'port'     => '3307',
-    'dbname'   => 'itelec2',
+    'port'     => '3306',      // Make sure this is the port your MySQL runs on
+    'dbname'   => 'itelect2',
     'username' => 'root',
     'password' => ''
 ];
-// ENVIRONMENT DETECTION
+
+// PRODUCTION SETTINGS - update with your real production creds
+$production_config = [
+    'host'     => 'prod-db-host',
+    'port'     => '3306',
+    'dbname'   => 'prod_db_name',
+    'username' => 'prod_username',
+    'password' => 'prod_password'
+];
+
+// Detect environment
 $server_name = $_SERVER['SERVER_NAME'] ?? '';
 $server_addr = $_SERVER['SERVER_ADDR'] ?? '';
 
@@ -18,4 +28,3 @@ if ($server_name === 'localhost' || $server_addr === '127.0.0.1' || $server_name
 } else {
     $config = $production_config;
 }
-?>
