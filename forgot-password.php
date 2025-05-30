@@ -1,8 +1,8 @@
 <?php
 session_start();
-require_once __DIR__.'/../../../database/dbconnection.php';
-require_once __DIR__.'/../../../config/settings-configuration.php';
-require_once __DIR__."/../../../vendor/autoload.php";
+require_once 'database/dbconnection.php';
+require_once 'config/settings-configuration.php';
+require_once "vendor/autoload.php";
 
 use PHPMailer\PHPMailer\PHPMailer;
 
