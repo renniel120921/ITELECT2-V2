@@ -266,7 +266,7 @@ class ADMIN
                     $_SESSION['username'] = $userRow['username'];
                     $_SESSION['loggedin'] = true;
 
-                    header("Location: ../../../dashboard.php");
+                    header("Location: ../../../index.php");
                     exit;
                 } else {
                     echo "<script>alert('Incorrect password.'); window.location.href='../../../';</script>";
