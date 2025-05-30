@@ -2,30 +2,45 @@
 session_start();
 require_once 'dashboard/admin/authentication/admin-class.php';
 
+// Check if session vars exist
+if (!isset($_SESSION['reset_email']) || !isset($_SESSION['reset_otp'])) {
+    echo "<script>alert('Invalid session. Start the reset process again.'); window.location.href='forgot-password.php';</script>";
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $otp = $_POST['otp'];
+    $otp = trim($_POST['otp']);
     $new_password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
 
-    if ($otp != $_SESSION['reset_otp']) {
+    if ($otp !== $_SESSION['reset_otp']) {
         echo "<script>alert('Invalid OTP'); window.location.href='reset-password.php';</script>";
         exit;
     }
 
-    if ($new_password != $confirm_password) {
+    if ($new_password !== $confirm_password) {
         echo "<script>alert('Passwords do not match'); window.location.href='reset-password.php';</script>";
         exit;
     }
 
-    $admin = new ADMIN();
-    $hashed = md5($new_password);
-    $stmt = $admin->runQuery("UPDATE user SET password = :password WHERE email = :email");
-    $stmt->execute([':password' => $hashed, ':email' => $_SESSION['reset_email']]);
+    try {
+        $admin = new ADMIN();
+        $conn = $admin->dbConnection();
+        $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
 
-    unset($_SESSION['reset_email']);
-    unset($_SESSION['reset_otp']);
+        $stmt = $conn->prepare("UPDATE user SET password = :password WHERE email = :email");
+        $stmt->bindParam(':password', $hashed_password);
+        $stmt->bindParam(':email', $_SESSION['reset_email']);
+        $stmt->execute();
 
-    echo "<script>alert('Password has been reset!'); window.location.href='index.php';</script>";
+        // Clean up
+        unset($_SESSION['reset_email']);
+        unset($_SESSION['reset_otp']);
+
+        echo "<script>alert('Password has been reset!'); window.location.href='index.php';</script>";
+    } catch (PDOException $e) {
+        echo "<script>alert('Database error: " . $e->getMessage() . "');</script>";
+    }
 }
 ?>
 
