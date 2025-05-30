@@ -9,18 +9,29 @@ class PasswordReset
     public function __construct()
     {
         $database = new Database();
-        $this->conn =  $database->dbConnection();
+        $this->conn = $database->dbConnection();
     }
 
     public function verifyOtpAndResetPassword($email, $otp, $new_password)
     {
-        // Check if OTP is valid and not expired
-        $stmt = $this->conn->prepare("SELECT * FROM password_resets WHERE email = :email AND otp = :otp AND expires_at > NOW()");
+        // Sanitize inputs
+        $email = trim($email);
+        $otp = trim($otp);
+
+        // Step 1: Check if OTP exists for the given email
+        $stmt = $this->conn->prepare("SELECT * FROM password_resets WHERE email = :email AND otp = :otp");
         $stmt->execute([':email' => $email, ':otp' => $otp]);
         $resetData = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$resetData) {
-            echo "<script>alert('Invalid or expired OTP!'); window.location.href='reset-password.php?email=" . urlencode($email) . "';</script>";
+            echo "<script>alert('Invalid OTP or Email!'); window.location.href='reset-password.php?email=" . urlencode($email) . "';</script>";
+            exit;
+        }
+
+        // Step 2: Check if OTP is expired
+        $current_time = date('Y-m-d H:i:s');
+        if ($resetData['expires_at'] <= $current_time) {
+            echo "<script>alert('OTP has expired! Please request a new one.'); window.location.href='reset-password.php?email=" . urlencode($email) . "';</script>";
             exit;
         }
 
@@ -59,55 +70,62 @@ if (isset($_POST['btn-reset'])) {
     $passwordReset->verifyOtpAndResetPassword($email, $otp, $new_password);
 }
 ?>
+
 <style>
-body {
-  font-family: Arial, sans-serif;
-  background: #f4f6f8;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-}
-form {
-  background: white;
-  padding: 30px 40px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  width: 350px;
-}
-input[type="hidden"] {
-  display: none;
-}
-input[type="text"],
-input[type="password"] {
-  width: 100%;
-  padding: 12px 14px;
-  margin-bottom: 18px;
-  border: 1.5px solid #ccc;
-  border-radius: 5px;
-  font-size: 15px;
-  transition: border-color 0.3s ease;
-}
-input[type="text"]:focus,
-input[type="password"]:focus {
-  border-color: #007BFF;
-  outline: none;
-}
-button[name="btn-reset"] {
-  width: 100%;
-  padding: 12px 0;
-  background-color: #007BFF;
-  color: white;
-  font-weight: 600;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: background-color 0.3s ease;
-}
-button[name="btn-reset"]:hover {
-  background-color: #0056b3;
-}
+    body {
+        font-family: Arial, sans-serif;
+        background: #f4f6f8;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+    }
+
+    form {
+        background: white;
+        padding: 30px 40px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        width: 350px;
+    }
+
+    input[type="hidden"] {
+        display: none;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+        width: 100%;
+        padding: 12px 14px;
+        margin-bottom: 18px;
+        border: 1.5px solid #ccc;
+        border-radius: 5px;
+        font-size: 15px;
+        transition: border-color 0.3s ease;
+    }
+
+    input[type="text"]:focus,
+    input[type="password"]:focus {
+        border-color: #007BFF;
+        outline: none;
+    }
+
+    button[name="btn-reset"] {
+        width: 100%;
+        padding: 12px 0;
+        background-color: #007BFF;
+        color: white;
+        font-weight: 600;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s ease;
+    }
+
+    button[name="btn-reset"]:hover {
+        background-color: #0056b3;
+    }
 </style>
 
 <form method="post" action="">
