@@ -1,72 +1,53 @@
 <?php
 session_start();
-include_once 'config/settings-configuration.php';
+require 'config/db.php';
 
-// CSRF Token generation kung wala pa
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+if (isset($_SESSION['user_id'])) {
+    header("Location: dashboard/user/index.php");
+    exit;
+}
+
+$error = '';
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $email = trim($_POST['email']);
+    $password = $_POST['password'];
+
+    $stmt = $pdo->prepare("SELECT * FROM user WHERE email = ? AND status = 1");
+    $stmt->execute([$email]);
+    $user = $stmt->fetch();
+
+    if ($user && password_verify($password, $user['password'])) {
+        // Login success
+        $_SESSION['user_id'] = $user['id'];
+        $_SESSION['username'] = $user['username'];
+
+        // Log login activity
+        $stmt_log = $pdo->prepare("INSERT INTO logs (user_id, activity, created_at) VALUES (?, ?, NOW())");
+        $stmt_log->execute([$user['id'], 'Logged in']);
+
+        header("Location: dashboard/user/index.php");
+        exit;
+    } else {
+        $error = "Invalid email or password, or your account is not verified.";
+    }
 }
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sign In / Registration</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-
-    <div class="w-full max-w-md p-6 bg-white rounded-xl shadow-md space-y-6">
-
-        <!-- SIGN IN -->
-        <div>
-            <h1 class="text-2xl font-bold text-center mb-4 text-blue-700">SIGN IN</h1>
-            <form action="dashboard/admin/authentication/admin-class.php" method="POST" class="space-y-4">
-                <input type="hidden" name="csrf_token" value="<?= $_SESSION["csrf_token"]; ?>">
-
-                <input type="email" name="email" placeholder="Enter Email" required
-                    class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400">
-
-                <input type="password" name="password" placeholder="Enter Password" required
-                    class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400">
-
-                <button type="submit" name="btn-signin"
-                    class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition">
-                    SIGN IN
-                </button>
-            </form>
-
-            <div class="mt-4 text-center">
-                <a href="forgot-password.php" class="text-sm text-blue-600 hover:underline">Forgot Password?</a>
-            </div>
-        </div>
-
-        <hr class="border-t my-4">
-
-        <!-- REGISTRATION -->
-        <div>
-            <h1 class="text-2xl font-bold text-center mb-4 text-green-700">REGISTRATION</h1>
-            <form action="process-auth.php" method="POST" class="space-y-4">
-                <input type="hidden" name="csrf_token" value="<?= $_SESSION["csrf_token"]; ?>">
-
-                <input type="text" name="username" placeholder="Enter Username" required
-                    class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-400">
-
-                <input type="email" name="email" placeholder="Enter Email" required
-                    class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-400">
-
-                <input type="password" name="password" placeholder="Enter Password" required
-                    class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-400">
-
-                <button type="submit" name="btn-signup"
-                    class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition">
-                    SIGN UP
-                </button>
-            </form>
-        </div>
-    </div>
-
+<html>
+<head><title>Login</title></head>
+<body>
+<h2>Login</h2>
+<?php
+if (isset($_GET['verified'])) {
+    echo "<p style='color:green;'>Account verified! Please login.</p>";
+}
+if ($error) echo "<p style='color:red;'>$error</p>";
+?>
+<form method="post" action="">
+    Email: <input type="email" name="email" value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"><br><br>
+    Password: <input type="password" name="password"><br><br>
+    <button type="submit">Login</button>
+</form>
 </body>
 </html>

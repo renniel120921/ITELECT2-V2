@@ -1,45 +1,44 @@
 <?php
 session_start();
-include_once 'config/settings-configuration.php';
+require 'config/db.php';
 
-// CSRF token setup kung sakaling wala pa
-if (empty($_SESSION['csrf_token'])) {
-    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+if (!isset($_SESSION['email_for_otp'])) {
+    header("Location: signup.php");
+    exit;
+}
+
+$email = $_SESSION['email_for_otp'];
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $entered_otp = trim($_POST['otp']);
+
+    $stmt = $pdo->prepare("SELECT * FROM user WHERE email = ? AND otp = ? AND otp_expiry > NOW() AND status = 0");
+    $stmt->execute([$email, $entered_otp]);
+    $user = $stmt->fetch();
+
+    if ($user) {
+        // OTP correct & valid
+        $stmt_update = $pdo->prepare("UPDATE user SET status = 1, otp = NULL, otp_expiry = NULL WHERE email = ?");
+        $stmt_update->execute([$email]);
+        unset($_SESSION['email_for_otp']);
+        header("Location: login.php?verified=1");
+        exit;
+    } else {
+        $error = "Invalid or expired OTP.";
+    }
 }
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verify OTP</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-
-    <div class="w-full max-w-md p-6 bg-white rounded-xl shadow-md space-y-6">
-        <h1 class="text-2xl font-bold text-center text-purple-700">Enter OTP</h1>
-        <p class="text-center text-sm text-gray-600">
-            We've sent a one-time password (OTP) to your registered email or phone number.
-        </p>
-
-        <form action="dashboard/admin/authentication/admin-class.php" method="POST" class="space-y-4">
-            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
-
-            <input type="number" name="otp" placeholder="Enter OTP" required
-                class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-400">
-
-            <button type="submit" name="btn-verify"
-                class="w-full bg-purple-600 text-white py-2 rounded-md hover:bg-purple-700 transition">
-                VERIFY
-            </button>
-        </form>
-
-        <div class="text-center">
-            <a href="login.php" class="text-sm text-blue-600 hover:underline">← Back to Sign In</a>
-        </div>
-    </div>
-
+<html>
+<head><title>Verify OTP</title></head>
+<body>
+<h2>Enter OTP sent to <?= htmlspecialchars($email) ?></h2>
+<?php if ($error) echo "<p style='color:red;'>$error</p>"; ?>
+<form method="post" action="">
+    OTP: <input type="text" name="otp" maxlength="6" required><br><br>
+    <button type="submit">Verify</button>
+</form>
 </body>
 </html>
