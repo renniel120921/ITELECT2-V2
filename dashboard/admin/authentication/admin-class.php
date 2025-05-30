@@ -266,7 +266,7 @@ class ADMIN
                     $_SESSION['username'] = $userRow['username'];
                     $_SESSION['loggedin'] = true;
 
-                    header("Location: ../../dashboard/index.php");
+                    header("Location:/index.php");
                     exit;
                 } else {
                     echo "<script>alert('Incorrect password.'); window.location.href='../../../';</script>";
@@ -288,7 +288,7 @@ class ADMIN
 
     public function logs($activity, $user_id)
     {
-        $stmt = $this->runQuery("INSERT INTO activity_log (activity, user_id) VALUES (:activity, :user_id)");
+        $stmt = $this->runQuery("INSERT INTO logs (activity, user_id) VALUES (:activity, :user_id)");
         $stmt->execute([
             ":activity" => $activity,
             ":user_id" => $user_id
