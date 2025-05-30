@@ -1,5 +1,6 @@
 <?php
-require_once 'config/settings-configuration.php';
+require_once __DIR__ . '/../../../config/settings-configuration.php';  // relative path to config
+require_once __DIR__ . '/../../../database/dbconnection.php';
 require_once 'vendor/autoload.php'; // PHPMailer
 
 use PHPMailer\PHPMailer\PHPMailer;

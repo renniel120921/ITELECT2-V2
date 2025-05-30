@@ -2,23 +2,13 @@
 // settings-configuration.php
 
 // LOCALHOST SETTINGS
-$local_config = [
+$config = [
     'host'     => 'localhost',
     'port'     => '3307',
     'dbname'   => 'itelec2',
     'username' => 'root',
     'password' => ''
 ];
-
-// PRODUCTION SETTINGS
-$production_config = [
-    'host'     => 'localhost',             // Change as needed
-    'port'     => '3306',
-    'dbname'   => 'itelect2',    // Replace with actual name
-    'username' => 'root',         // Replace with actual username
-    'password' => ''          // Replace with actual password
-];
-
 // ENVIRONMENT DETECTION
 $server_name = $_SERVER['SERVER_NAME'] ?? '';
 $server_addr = $_SERVER['SERVER_ADDR'] ?? '';

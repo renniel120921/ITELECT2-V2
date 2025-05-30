@@ -1,5 +1,5 @@
 <?php
-require_once 'dashboard/admin/authentication/admin-class.php';
+require_once __DIR__ . '/dashboard/admin/authentication/admin-class.php';;
 $admin = new Admin();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
