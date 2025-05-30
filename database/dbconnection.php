@@ -10,13 +10,14 @@ class Database
     private $password;
     public $conn;
 
-    public function __construct($config)
+    public function __construct(array $config = [])
     {
-        $this->host     = $config['host'];
-        $this->port     = $config['port'];
-        $this->db_name  = $config['dbname'];
-        $this->username = $config['username'];
-        $this->password = $config['password'];
+        // Use provided config or set default empty values
+        $this->host     = $config['host'] ?? 'localhost';
+        $this->port     = $config['port'] ?? '3306';
+        $this->db_name  = $config['dbname'] ?? '';
+        $this->username = $config['username'] ?? '';
+        $this->password = $config['password'] ?? '';
     }
 
     public function dbConnection()

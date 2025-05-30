@@ -12,11 +12,11 @@ $local_config = [
 
 // PRODUCTION SETTINGS - update with your real production creds
 $production_config = [
-    'host'     => 'prod-db-host',
+    'host'     => 'host',
     'port'     => '3306',
-    'dbname'   => 'prod_db_name',
-    'username' => 'prod_username',
-    'password' => 'prod_password'
+    'dbname'   => 'itelect2',
+    'username' => 'root',
+    'password' => ''
 ];
 
 // Detect environment

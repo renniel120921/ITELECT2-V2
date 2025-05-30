@@ -10,8 +10,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $enteredOtp = $_POST['otp'] ?? '';
     $email = $_POST['email'] ?? '';
 
-    if ($admin->verifyOtp($email, $enteredOtp)) {
-        // Success - redirect to login with message (or alert)
+    // Optional: Basic backend format check
+    if (!preg_match('/^\d{6}$/', $enteredOtp)) {
+        $error = "Please enter a valid 6-digit OTP.";
+    } elseif ($admin->verifyOtp($email, $enteredOtp)) {
         header("Location: login.php?verified=1");
         exit();
     } else {
@@ -99,7 +101,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <form method="POST" action="">
         <input type="hidden" name="email" value="<?= htmlspecialchars($email) ?>">
         <label for="otp">Enter OTP:</label>
-        <input type="text" id="otp" name="otp" required maxlength="6" pattern="\d{6}" title="Please enter a 6-digit OTP">
+        <input
+            type="text"
+            id="otp"
+            name="otp"
+            required
+            maxlength="6"
+            minlength="6"
+            pattern="\d{6}"
+            title="Please enter a 6-digit OTP"
+            autocomplete="one-time-code"
+        >
 
         <button type="submit">Verify</button>
     </form>
