@@ -205,40 +205,36 @@ class ADMIN
     }
 
     public function addAdmin($csrf_token, $username, $email, $password)
-    {
-        $stmt = $this->runQuery("SELECT * FROM user WHERE email =:email");
-        $stmt->execute(array(":email" => $email));
+{
+    if (!isset($_SESSION['csrf_token']) || !hash_equals($_SESSION['csrf_token'], $csrf_token)) {
+        echo "<script>alert('Invalid CSRF Token!'); window.location.href='../../../';</script>";
+        exit;
+    }
+    unset($_SESSION['csrf_token']);
 
-        if($stmt->rowCount() > 0){
-            echo "<script>alert('Email already exists!'); window.location.href='../../../';</script>";
-            exit;
-        }
+    $stmt = $this->runQuery("SELECT * FROM user WHERE email = :email");
+    $stmt->execute([":email" => $email]);
 
-        if(!isset($csrf_token) || !hash_equals($_SESSION['csrf_token'], $csrf_token)){
-            echo "<script>alert('Invalid CSRF Token!'); window.location.href='../../../';</script>";
-            exit;
-        }
-
-        unset($_SESSION['csrf_token']);
-
-        $hash_password = md5($password);
-
-        $stmt = $this->runQuery("INSERT INTO user (username, email, password) VALUES (:username, :email, :password)");
-        $exec = $stmt->execute(array(
-            ":username" => $username,
-            ":email" => $email,
-            ":password" => $hash_password
-        ));
-
-        if($exec){
-            echo "<script>alert('Admin Added Successfully!'); window.location.href='../../../';</script>";
-            exit;
-        } else {
-            echo "<script>alert('Error Adding Admin!'); window.location.href='../../../';</script>";
-            exit;
-        }
+    if ($stmt->rowCount() > 0) {
+        echo "<script>alert('Email already exists!'); window.location.href='../../../';</script>";
+        exit;
     }
 
+    $hash_password = password_hash($password, PASSWORD_DEFAULT);
+
+    $stmt = $this->runQuery("INSERT INTO user (username, email, password) VALUES (:username, :email, :password)");
+    $exec = $stmt->execute([
+        ":username" => $username,
+        ":email" => $email,
+        ":password" => $hash_password
+    ]);
+
+    if ($exec) {
+        echo "<script>alert('Admin added successfully!'); window.location.href='../../../';</script>";
+    } else {
+        echo "<script>alert('Error adding admin!'); window.location.href='../../../';</script>";
+    }
+}
     public function adminSignin($email, $password, $csrf_token)
 {
     try {
