@@ -1,99 +1,98 @@
 <?php
 session_start();
-require 'vendor/autoload.php'; // PHPMailer via Composer
+require_once __DIR__.'/../../../database/dbconnection.php';
+require_once __DIR__.'/../../../config/settings-configuration.php';
+require_once __DIR__."/../../../vendor/autoload.php";
+
 use PHPMailer\PHPMailer\PHPMailer;
-use PHPMailer\PHPMailer\Exception;
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = trim($_POST['email']);
+class PasswordReset
+{
+    private $conn;
+    private $smtp_email;
+    private $smtp_password;
 
-    // Optional: check if email exists in your DB before proceeding
-    // if (!emailExistsInDatabase($email)) {
-    //     echo "<script>alert('Email not found'); window.location.href='forgot-password.php';</script>";
-    //     exit;
-    // }
+    public function __construct()
+    {
+        $database = new Database();
+        $this->conn =  $database->dbConnection();
 
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        echo "<script>alert('Invalid email format.'); window.location.href='forgot-password.php';</script>";
-        exit;
+        $settings = new SystemConfig();
+        $this->smtp_email = $settings->getSmtpEmail();
+        $this->smtp_password = $settings->getSmtpPassword();
     }
 
-    // Generate OTP and store in session
-    $otp = random_int(100000, 999999); // More secure than rand()
-    $_SESSION['reset_email'] = $email;
-    $_SESSION['reset_otp'] = $otp;
+    public function sendOtp($email)
+    {
+        // Check if email exists in user table
+        $stmt = $this->conn->prepare("SELECT * FROM user WHERE email = :email");
+        $stmt->execute([':email' => $email]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    // Send OTP email
-    $mail = new PHPMailer(true);
-    try {
-        // SMTP server settings
+        if (!$user) {
+            echo "<script>alert('Email not found!'); window.location.href='forgot-password.php';</script>";
+            exit;
+        }
+
+        // Generate OTP
+        $otp = rand(100000, 999999);
+
+        // Save OTP and expiration (e.g., 15 minutes from now) in DB - create a password_resets table for this
+        $expires_at = date("Y-m-d H:i:s", strtotime("+15 minutes"));
+
+        // Delete previous OTP for this email first to avoid duplicates
+        $this->conn->prepare("DELETE FROM password_resets WHERE email = :email")->execute([':email' => $email]);
+
+        // Insert new OTP
+        $stmt = $this->conn->prepare("INSERT INTO password_resets (email, otp, expires_at) VALUES (:email, :otp, :expires_at)");
+        $stmt->execute([
+            ':email' => $email,
+            ':otp' => $otp,
+            ':expires_at' => $expires_at
+        ]);
+
+        // Send OTP email
+        $subject = "Password Reset OTP";
+        $message = "
+            <p>Hello,</p>
+            <p>Your OTP for password reset is: <b>$otp</b></p>
+            <p>This OTP is valid for 15 minutes.</p>
+            <p>If you didn't request this, please ignore.</p>
+        ";
+
+        $this->send_email($email, $message, $subject);
+
+        echo "<script>alert('OTP sent to your email!'); window.location.href='reset-password.php?email=$email';</script>";
+    }
+
+    private function send_email($email, $message, $subject)
+    {
+        $mail = new PHPMailer();
         $mail->isSMTP();
-        $mail->Host       = 'smtp.gmail.com';
-        $mail->SMTPAuth   = true;
-        $mail->Username   = 'rennielsalazar948@gmail.com'; // Your Gmail
-        $mail->Password   = 'xiam wqyh hsrj pqcl';         // App-specific password
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port       = 587;
-
-        // Email setup
-        $mail->setFrom('rennielsalazar948@gmail.com', 'Password Reset - Renniel');
+        $mail->SMTPDebug = 0;
+        $mail->SMTPAuth = true;
+        $mail->SMTPSecure = "tls";
+        $mail->Host = "smtp.gmail.com";
+        $mail->Port = 587;
+        $mail->Username = $this->smtp_email;
+        $mail->Password = $this->smtp_password;
+        $mail->setFrom($this->smtp_email, "Your System");
         $mail->addAddress($email);
-
         $mail->isHTML(true);
-        $mail->Subject = 'Your OTP for Password Reset';
-        $mail->Body    = "<h3>Hi there,</h3>
-                          <p>You requested a password reset. Use the following OTP to continue:</p>
-                          <h2>$otp</h2>
-                          <p>This OTP is valid for this session only.</p>";
-
+        $mail->Subject = $subject;
+        $mail->Body = $message;
         $mail->send();
-        echo "<script>alert('OTP sent to $email'); window.location.href='reset-password.php';</script>";
-    } catch (Exception $e) {
-        echo "<script>alert('Failed to send OTP: {$mail->ErrorInfo}'); window.location.href='forgot-password.php';</script>";
     }
 }
+
+if (isset($_POST['btn-forgot'])) {
+    $email = trim($_POST['email']);
+    $passwordReset = new PasswordReset();
+    $passwordReset->sendOtp($email);
+}
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Forgot Password</title>
-    <style>
-        body {
-            font-family: Arial;
-            background: #f0f2f5;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-        }
-        form {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px #ccc;
-            width: 350px;
-        }
-        input[type=email], input[type=submit] {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-        }
-        input[type=submit] {
-            background: #007bff;
-            color: white;
-            cursor: pointer;
-        }
-    </style>
-</head>
-<body>
-    <form method="POST">
-        <h2>Forgot Password</h2>
-        <label>Email Address</label>
-        <input type="email" name="email" required placeholder="Enter your email">
-        <input type="submit" value="Send OTP">
-    </form>
-</body>
-</html>
+<!-- Simple form -->
+<form method="post" action="">
+    <input type="email" name="email" placeholder="Enter your registered email" required>
+    <button type="submit" name="btn-forgot">Send OTP</button>
+</form>

@@ -240,22 +240,23 @@ class ADMIN
     }
 
     public function adminSignin($email, $password, $csrf_token)
-    {
-        try{
-            if(!isset($csrf_token) || !hash_equals($_SESSION['csrf_token'], $csrf_token)){
-                echo "<script>alert('Invalid CSRF Token!'); window.location.href='../../../';</script>";
-                $token = $_SESSION['csrf_token'];
-                echo "<script>console.log($token);</script>";
-                echo "<script>console.log($csrf_token);</script>";
-                exit;
-            }
-            unset($_SESSION['csrf_token']);
+{
+    try {
+        // Check CSRF token
+        if (!isset($csrf_token) || !hash_equals($_SESSION['csrf_token'], $csrf_token)) {
+            echo "<script>alert('Invalid CSRF Token!'); window.location.href='../../../';</script>";
+            exit;
+        }
+        unset($_SESSION['csrf_token']);
 
-            $stmt = $this->runQuery("SELECT * FROM user WHERE email = :email");
-            $stmt->execute(array(":email" => $email));
-            $userRow = $stmt->fetch(PDO::FETCH_ASSOC);
+        // Get user by email
+        $stmt = $this->runQuery("SELECT * FROM user WHERE email = :email");
+        $stmt->execute(array(":email" => $email));
+        $userRow = $stmt->fetch(PDO::FETCH_ASSOC);
 
-            if($stmt->rowCount() == 1){
+        if ($userRow) {
+            // Verify password
+            if (password_verify($password, $userRow['password'])) {
                 $activity = "Has Successfully signed in";
                 $user_id = $userRow['id'];
                 $this->logs($activity, $user_id);
@@ -264,16 +265,20 @@ class ADMIN
 
                 echo "<script>alert('Welcome!'); window.location.href='../';</script>";
                 exit;
-            }else{
+            } else {
+                // Password wrong
                 echo "<script>alert('Invalid Credentials!'); window.location.href='../../../';</script>";
                 exit;
             }
-
-        }catch(PDOException $ex){
-            echo $ex->getMessage();
+        } else {
+            // Email not found
+            echo "<script>alert('Invalid Credentials!'); window.location.href='../../../';</script>";
+            exit;
         }
+    } catch (PDOException $ex) {
+        echo $ex->getMessage();
     }
-
+}
     public function adminSignout()
     {
         unset($_SESSION['adminSession']);
