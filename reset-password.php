@@ -73,10 +73,6 @@ if (isset($_POST['btn-reset'])) {
     $passwordReset->verifyOtpAndResetPassword($email, $otp, $new_password);
 }
 ?>
-<?php
-session_start();
-?>
-
 <!DOCTYPE html>
 <html lang="en">
 
