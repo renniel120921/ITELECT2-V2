@@ -2,18 +2,25 @@
 session_start();
 require_once 'dashboard/admin/authentication/admin-class.php';
 
-// Check if session vars exist
-if (!isset($_SESSION['reset_email']) || !isset($_SESSION['reset_otp'])) {
-    echo "<script>alert('Invalid session. Start the reset process again.'); window.location.href='forgot-password.php';</script>";
-    exit;
+// Debug helper (remove in production)
+function debugSession() {
+    echo "<pre>";
+    print_r($_SESSION);
+    echo "</pre>";
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $otp = trim($_POST['otp']);
+    $otp = $_POST['otp'];
     $new_password = $_POST['password'];
     $confirm_password = $_POST['confirm_password'];
 
-    if ($otp !== $_SESSION['reset_otp']) {
+    // Check if OTP and email session data exist
+    if (!isset($_SESSION['reset_otp']) || !isset($_SESSION['reset_email'])) {
+        echo "<script>alert('Session expired or invalid request. Try again.'); window.location.href='forgot-password.php';</script>";
+        exit;
+    }
+
+    if ($otp !== strval($_SESSION['reset_otp'])) {
         echo "<script>alert('Invalid OTP'); window.location.href='reset-password.php';</script>";
         exit;
     }
@@ -23,27 +30,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    try {
-        $admin = new ADMIN();
-        $conn = $admin->dbConnection();
-        $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+    // Update password
+    $admin = new ADMIN();
+    $hashed = md5($new_password); // Consider using password_hash() instead
+    $stmt = $admin->runQuery("UPDATE user SET password = :password WHERE email = :email");
+    $stmt->execute([
+        ':password' => $hashed,
+        ':email' => $_SESSION['reset_email']
+    ]);
 
-        $stmt = $conn->prepare("UPDATE user SET password = :password WHERE email = :email");
-        $stmt->bindParam(':password', $hashed_password);
-        $stmt->bindParam(':email', $_SESSION['reset_email']);
-        $stmt->execute();
+    // Clear session values
+    unset($_SESSION['reset_email']);
+    unset($_SESSION['reset_otp']);
 
-        // Clean up
-        unset($_SESSION['reset_email']);
-        unset($_SESSION['reset_otp']);
-
-        echo "<script>alert('Password has been reset!'); window.location.href='index.php';</script>";
-    } catch (PDOException $e) {
-        echo "<script>alert('Database error: " . $e->getMessage() . "');</script>";
-    }
+    echo "<script>alert('Password has been reset!'); window.location.href='index.php';</script>";
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
