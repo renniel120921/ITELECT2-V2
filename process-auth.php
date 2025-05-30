@@ -1,6 +1,7 @@
 <?php
 session_start();
-require_once 'authentication/admin-class.php';
+require_once 'dashboard/admin/authentication/admin-class.php';
+
 
 $admin = new ADMIN();
 
