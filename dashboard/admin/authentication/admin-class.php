@@ -130,7 +130,7 @@ class ADMIN
                 $_SESSION['adminSession'] = $user_id;
 
                 // Redirect to your root index page - adjust path as needed
-                echo "<script>alert('Welcome!'); window.location.href='admin/index.php';</script>";
+                echo "<script>alert('Welcome!'); window.location.href='index.php';</script>";
                 exit;
             } else {
                 echo "<script>alert('Invalid Credentials!'); window.location.href='../../../';</script>";
