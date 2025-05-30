@@ -1,5 +1,5 @@
 <?php
-require_once 'settings-configuration.php';
+require_once __DIR__ . '/../../../settings-configuration.php';
 require_once 'vendor/autoload.php'; // PHPMailer
 
 use PHPMailer\PHPMailer\PHPMailer;
