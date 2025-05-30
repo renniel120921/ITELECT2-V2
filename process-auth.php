@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'admin-class.php';
+require_once 'authentication/admin-class.php';
 
 $admin = new ADMIN();
 
