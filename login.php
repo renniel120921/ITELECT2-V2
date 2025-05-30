@@ -1,5 +1,6 @@
 <?php
-require_once 'admin-class.php';
+require_once 'dashboard/admin/authentication/admin-class.php';
+
 $admin = new Admin();
 
 $error = '';

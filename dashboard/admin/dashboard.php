@@ -1,6 +1,7 @@
 <?php
 session_start();
-require_once 'admin-class.php';
+require_once 'dashboard/admin/authentication/admin-class.php';
+
 
 // Check login
 if (!isset($_SESSION['user_id'])) {

@@ -1,5 +1,5 @@
 <?php
-require_once 'settings-configuration.php'; // Include config
+require_once 'config/settings-configuration.php'; // Include config
 
 class Database
 {
