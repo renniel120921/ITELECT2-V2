@@ -166,7 +166,7 @@ class ADMIN
         $stmt->execute([":user_id" => $user_id, ":activity" => $activity]);
     }
 
-    private function runQuery($sql)
+    public function runQuery($sql)
     {
         return $this->conn->prepare($sql);
     }
