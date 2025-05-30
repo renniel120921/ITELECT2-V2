@@ -16,7 +16,7 @@
         <!-- SIGN IN -->
         <div>
     <h1 class="text-2xl font-bold text-center mb-4">SIGN IN</h1>
-    <form action="dashboard/admin/authentication/admin-class.php" method="POST" class="space-y-4">
+    <form action="config/dashboard/admin/index.php" method="POST" class="space-y-4">
         <input type="hidden" name="csrf_token" value="<?= $_SESSION["csrf_token"]; ?>">
 
         <input type="email" name="email" placeholder="Enter Email" required
