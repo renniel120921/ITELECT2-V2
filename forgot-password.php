@@ -22,22 +22,23 @@ class PasswordReset
         $this->smtp_password = $settings->getSmtpPassword();
     }
 
-    public function sendOtp($email)
-    {
-        // Check if email exists
-        $stmt = $this->conn->prepare("SELECT * FROM user WHERE email = :email");
-        $stmt->execute([':email' => $email]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+   public function sendOtp($email)
+{
+    // Check if email exists
+    $stmt = $this->conn->prepare("SELECT * FROM user WHERE email = :email");
+    $stmt->execute([':email' => $email]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if (!$user) {
-            echo "<script>alert('Email not found!'); window.location.href='forgot-password.php';</script>";
-            exit;
-        }
+    if (!$user) {
+        echo "<script>alert('Email not found!'); window.location.href='forgot-password.php';</script>";
+        exit;
+    }
 
-        // Generate OTP
-        $otp = rand(100000, 999999);
-        $expires_at = date("Y-m-d H:i:s", strtotime("+15 minutes"));
+    // Generate OTP
+    $otp = rand(100000, 999999);
+    $expires_at = date("Y-m-d H:i:s", strtotime("+15 minutes"));
 
+    try {
         // Remove old OTP
         $this->conn->prepare("DELETE FROM password_resets WHERE email = :email")->execute([':email' => $email]);
 
@@ -48,23 +49,26 @@ class PasswordReset
             ':otp' => $otp,
             ':expires_at' => $expires_at
         ]);
-
-        // Email content
-        $subject = "Password Reset OTP";
-        $message = "
-            <p>Hello,</p>
-            <p>Your OTP for password reset is: <b>$otp</b></p>
-            <p>This OTP is valid for 15 minutes.</p>
-            <p>If you didn't request this, please ignore.</p>
-        ";
-
-        $this->send_email($email, $message, $subject);
-
-        // Redirect to reset page with email param
-        header("Location: reset-password.php?email=" . urlencode($email));
-        exit;
+    } catch (PDOException $e) {
+        // Show the exact DB error if insert fails
+        die("Database error while inserting OTP: " . $e->getMessage());
     }
 
+    // Email content
+    $subject = "Password Reset OTP";
+    $message = "
+        <p>Hello,</p>
+        <p>Your OTP for password reset is: <b>$otp</b></p>
+        <p>This OTP is valid for 15 minutes.</p>
+        <p>If you didn't request this, please ignore.</p>
+    ";
+
+    $this->send_email($email, $message, $subject);
+
+    // Redirect to reset page with email param
+    header("Location: reset-password.php?email=" . urlencode($email));
+    exit;
+}
     private function send_email($email, $message, $subject)
     {
         $mail = new PHPMailer();
