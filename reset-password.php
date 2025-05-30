@@ -2,180 +2,85 @@
 session_start();
 require_once 'database/dbconnection.php';
 
-class PasswordReset
-{
-    private $conn;
-
-    public function __construct()
-    {
-        $database = new Database();
-        $this->conn = $database->dbConnection();
-    }
-
-    public function verifyOtpAndResetPassword($email, $otp, $new_password)
-    {
-        $email = trim($email);
-        $otp = trim($otp);
-
-        // Step 1: Check if OTP exists and matches
-        $stmt = $this->conn->prepare("SELECT * FROM password_resets WHERE email = :email AND otp = :otp");
-        $stmt->execute([':email' => $email, ':otp' => $otp]);
-        $resetData = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$resetData) {
-            $this->redirectWithError("Invalid OTP or Email!", $email);
-        }
-
-        // Step 2: Check OTP expiry
-        if ($resetData['expires_at'] <= date('Y-m-d H:i:s')) {
-            $this->redirectWithError("OTP has expired! Please request a new one.", $email);
-        }
-
-        // Step 3: Hash new password
-        $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-
-        // Step 4: Update password in user table
-        $stmt = $this->conn->prepare("UPDATE user SET password = :password WHERE email = :email");
-        $stmt->execute([':password' => $hashed_password, ':email' => $email]);
-
-        // Step 5: Delete used OTP
-        $stmt = $this->conn->prepare("DELETE FROM password_resets WHERE email = :email");
-        $stmt->execute([':email' => $email]);
-
-        // Success message and redirect to login
-        $_SESSION['success'] = "Password reset successful. Please login with your new password.";
-        header("Location: login.php");
-        exit;
-    }
-
-    private function redirectWithError($message, $email)
-    {
-        $_SESSION['error'] = $message;
-        header("Location: reset-password.php?email=" . urlencode($email));
-        exit;
-    }
+if (!isset($_SESSION['reset_email']) || !isset($_SESSION['otp_verified']) || $_SESSION['otp_verified'] !== true) {
+    header("Location: forgot-password.php");
+    exit;
 }
 
-// Handle form submit
-if (isset($_POST['btn-reset'])) {
-    $email = trim($_POST['email']);
-    $otp = trim($_POST['otp']);
-    $new_password = trim($_POST['password']);
-    $confirm_password = trim($_POST['confirm_password']);
+$email = $_SESSION['reset_email'];
 
-    if ($new_password !== $confirm_password) {
-        $_SESSION['error'] = "Password and Confirm Password do not match!";
-        header("Location: reset-password.php?email=" . urlencode($email));
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $password = $_POST['password'];
+    $confirm_password = $_POST['confirm_password'];
+
+    if ($password !== $confirm_password) {
+        $error_message = 'Passwords do not match!';
+    } elseif (strlen($password) < 6) {
+        $error_message = 'Password must be at least 6 characters.';
+    } else {
+        $password_hash = password_hash($password, PASSWORD_DEFAULT);
+        $stmt = $db->prepare("UPDATE user SET password = :password, otp = NULL, otp_expiry = NULL WHERE email = :email");
+        $stmt->execute([':password' => $password_hash, ':email' => $email]);
+
+        unset($_SESSION['reset_email'], $_SESSION['otp_verified']);
+
+        $_SESSION['success_message'] = 'Password reset successful! You can now login.';
+        header("Location: signin.php");
         exit;
     }
-
-    $passwordReset = new PasswordReset();
-    $passwordReset->verifyOtpAndResetPassword($email, $otp, $new_password);
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8" />
-    <title>Reset Password</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f4f6f8;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-
-        form {
-            background: white;
-            padding: 30px 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            width: 350px;
-        }
-
-        input[type="hidden"] {
-            display: none;
-        }
-
-        input[type="text"],
-        input[type="password"] {
-            width: 100%;
-            padding: 12px 14px;
-            margin-bottom: 18px;
-            border: 1.5px solid #ccc;
-            border-radius: 5px;
-            font-size: 15px;
-            transition: border-color 0.3s ease;
-        }
-
-        input[type="text"]:focus,
-        input[type="password"]:focus {
-            border-color: #007BFF;
-            outline: none;
-        }
-
-        button[name="btn-reset"] {
-            width: 100%;
-            padding: 12px 0;
-            background-color: #007BFF;
-            color: white;
-            font-weight: 600;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s ease;
-        }
-
-        button[name="btn-reset"]:hover {
-            background-color: #0056b3;
-        }
-
-        .message {
-            margin-bottom: 15px;
-            padding: 10px;
-            border-radius: 5px;
-            font-weight: 600;
-            text-align: center;
-        }
-
-        .error {
-            background-color: #f8d7da;
-            color: #842029;
-            border: 1px solid #f5c2c7;
-        }
-
-        .success {
-            background-color: #d1e7dd;
-            color: #0f5132;
-            border: 1px solid #badbcc;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Reset Password</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
 </head>
+<body class="bg-light">
 
-<body>
+<div class="container d-flex justify-content-center align-items-center min-vh-100">
+  <div class="card shadow-sm p-4" style="max-width: 400px; width: 100%;">
+    <h3 class="mb-4 text-center">Reset Password</h3>
 
-    <form method="post" action="">
-        <?php if (!empty($_SESSION['error'])) : ?>
-            <div class="message error"><?php echo $_SESSION['error']; unset($_SESSION['error']); ?></div>
-        <?php endif; ?>
+    <?php if (!empty($error_message)) : ?>
+      <div class="alert alert-danger"><?= htmlspecialchars($error_message) ?></div>
+    <?php elseif (!empty($_SESSION['success_message'])): ?>
+      <div class="alert alert-success"><?= htmlspecialchars($_SESSION['success_message']) ?></div>
+      <?php unset($_SESSION['success_message']); ?>
+    <?php endif; ?>
 
-        <?php if (!empty($_SESSION['success'])) : ?>
-            <div class="message success"><?php echo $_SESSION['success']; unset($_SESSION['success']); ?></div>
-        <?php endif; ?>
-
-        <input type="hidden" name="email" value="<?php echo isset($_GET['email']) ? htmlspecialchars($_GET['email']) : ''; ?>" required>
-        <input type="text" name="otp" placeholder="Enter OTP" required>
-        <input type="password" name="password" placeholder="New Password" required>
-        <input type="password" name="confirm_password" placeholder="Confirm New Password" required>
-        <button type="submit" name="btn-reset">Reset Password</button>
+    <form method="POST" action="">
+      <div class="mb-3">
+        <label for="password" class="form-label">New Password</label>
+        <input
+          type="password"
+          class="form-control"
+          id="password"
+          name="password"
+          placeholder="Enter new password"
+          required
+          minlength="6"
+        />
+      </div>
+      <div class="mb-3">
+        <label for="confirm_password" class="form-label">Confirm New Password</label>
+        <input
+          type="password"
+          class="form-control"
+          id="confirm_password"
+          name="confirm_password"
+          placeholder="Confirm new password"
+          required
+          minlength="6"
+        />
+      </div>
+      <button type="submit" class="btn btn-primary w-100">Reset Password</button>
     </form>
+  </div>
+</div>
 
 </body>
-
 </html>
-

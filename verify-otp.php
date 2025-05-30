@@ -1,5 +1,11 @@
 <?php
-    include_once 'config/settings-configuration.php';
+session_start();
+include_once 'config/settings-configuration.php';
+
+// CSRF token setup kung sakaling wala pa
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 ?>
 
 <!DOCTYPE html>
@@ -13,11 +19,13 @@
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
 
     <div class="w-full max-w-md p-6 bg-white rounded-xl shadow-md space-y-6">
-        <h1 class="text-2xl font-bold text-center text-gray-800">Enter OTP</h1>
-        <p class="text-center text-sm text-gray-600">We've sent a one-time password (OTP) to your registered email or phone.</p>
+        <h1 class="text-2xl font-bold text-center text-purple-700">Enter OTP</h1>
+        <p class="text-center text-sm text-gray-600">
+            We've sent a one-time password (OTP) to your registered email or phone number.
+        </p>
 
         <form action="dashboard/admin/authentication/admin-class.php" method="POST" class="space-y-4">
-            <input type="hidden" name="csrf_token" value="<?= $csrf_token ?>">
+            <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
 
             <input type="number" name="otp" placeholder="Enter OTP" required
                 class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-purple-400">
@@ -29,7 +37,7 @@
         </form>
 
         <div class="text-center">
-            <a href="login.php" class="text-sm text-blue-600 hover:underline">Back to Sign In</a>
+            <a href="login.php" class="text-sm text-blue-600 hover:underline">← Back to Sign In</a>
         </div>
     </div>
 

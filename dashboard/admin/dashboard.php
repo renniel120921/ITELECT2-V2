@@ -3,14 +3,22 @@ require_once 'authentication/admin-class.php';
 
 $admin = new ADMIN();
 
+// Redirect if user is not logged in
 if (!$admin->isUserLoggedIn()) {
-    header('Location: ../../index.php');
+    header('Location: ../../dashboard.php');
     exit;
 }
 
-$stmt = $admin->runQuery("SELECT * FROM user WHERE id = :id");
-$stmt->execute([':id' => $_SESSION['adminSession']]);
+// Get user data based on email session
+$stmt = $admin->runQuery("SELECT * FROM user WHERE email = :email");
+$stmt->execute([':email' => $_SESSION['adminEmail']]);
 $user_data = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// Exit if user not found
+if (!$user_data) {
+    header('Location: ../../login.php');
+    exit;
+}
 ?>
 
 <!DOCTYPE html>
@@ -37,8 +45,7 @@ $user_data = $stmt->fetch(PDO::FETCH_ASSOC);
             </nav>
             <form action="authentication/admin-class.php" method="GET" class="p-4 border-t border-blue-700">
                 <input type="hidden" name="admin_signout" value="1">
-                <button type="submit"
-                    class="w-full bg-red-600 hover:bg-red-700 transition text-white py-2 rounded">
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 transition text-white py-2 rounded">
                     Sign Out
                 </button>
             </form>

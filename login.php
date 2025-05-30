@@ -1,5 +1,11 @@
 <?php
-    include_once 'config/settings-configuration.php';
+session_start();
+include_once 'config/settings-configuration.php';
+
+// CSRF Token generation kung wala pa
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
 ?>
 
 <!DOCTYPE html>
@@ -13,34 +19,35 @@
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
 
     <div class="w-full max-w-md p-6 bg-white rounded-xl shadow-md space-y-6">
+
         <!-- SIGN IN -->
         <div>
-    <h1 class="text-2xl font-bold text-center mb-4">SIGN IN</h1>
-    <form action="dashboard/admin/authentication/admin-class.php" method="POST" class="space-y-4">
-        <input type="hidden" name="csrf_token" value="<?= $_SESSION["csrf_token"]; ?>">
+            <h1 class="text-2xl font-bold text-center mb-4 text-blue-700">SIGN IN</h1>
+            <form action="dashboard/admin/authentication/admin-class.php" method="POST" class="space-y-4">
+                <input type="hidden" name="csrf_token" value="<?= $_SESSION["csrf_token"]; ?>">
 
-        <input type="email" name="email" placeholder="Enter Email" required
-            class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <input type="email" name="email" placeholder="Enter Email" required
+                    class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400">
 
-        <input type="password" name="password" placeholder="Enter Password" required
-            class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400">
+                <input type="password" name="password" placeholder="Enter Password" required
+                    class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-400">
 
-        <button type="submit" name="btn-signin"
-            class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition">
-            SIGN IN
-        </button>
-    </form>
+                <button type="submit" name="btn-signin"
+                    class="w-full bg-blue-600 text-white py-2 rounded-md hover:bg-blue-700 transition">
+                    SIGN IN
+                </button>
+            </form>
 
-    <!-- Forgot and Reset Links -->
-    <div class="mt-4 text-center space-y-2">
-        <a href="forgot-password.php" class="text-sm text-blue-600 hover:underline">Forgot Password?</a><br>
-        <!--<a href="reset-password.php" class="text-sm text-blue-600 hover:underline">Reset Password</a>
-    </div>
-</div>
+            <div class="mt-4 text-center">
+                <a href="forgot-password.php" class="text-sm text-blue-600 hover:underline">Forgot Password?</a>
+            </div>
+        </div>
+
+        <hr class="border-t my-4">
 
         <!-- REGISTRATION -->
         <div>
-            <h1 class="text-2xl font-bold text-center mb-4">REGISTRATION</h1>
+            <h1 class="text-2xl font-bold text-center mb-4 text-green-700">REGISTRATION</h1>
             <form action="dashboard/admin/authentication/admin-class.php" method="POST" class="space-y-4">
                 <input type="hidden" name="csrf_token" value="<?= $_SESSION["csrf_token"]; ?>">
 
@@ -54,7 +61,9 @@
                     class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-400">
 
                 <button type="submit" name="btn-signup"
-                    class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition">SIGN UP</button>
+                    class="w-full bg-green-600 text-white py-2 rounded-md hover:bg-green-700 transition">
+                    SIGN UP
+                </button>
             </form>
         </div>
     </div>
