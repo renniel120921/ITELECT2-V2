@@ -48,7 +48,7 @@ if (empty($_SESSION['csrf_token'])) {
         <!-- REGISTRATION -->
         <div>
             <h1 class="text-2xl font-bold text-center mb-4 text-green-700">REGISTRATION</h1>
-            <form action="dashboard/admin/authentication/admin-class.php" method="POST" class="space-y-4">
+            <form action="process-auth.php" method="POST" class="space-y-4">
                 <input type="hidden" name="csrf_token" value="<?= $_SESSION["csrf_token"]; ?>">
 
                 <input type="text" name="username" placeholder="Enter Username" required
