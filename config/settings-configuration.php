@@ -16,7 +16,7 @@ $local_config = [
 
 // Production Configuration (update with actual prod credentials if needed)
 $production_config = [
-    'host'     => 'localhost', // Change this if using cloud/remote DB
+    'host'     => 'localhost',
     'port'     => '3306',
     'dbname'   => 'itelect2',
     'username' => 'root',

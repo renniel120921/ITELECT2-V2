@@ -104,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8" />
     <title>Forgot Password</title>
     <style>
-        /* Your existing CSS */
+        
         body {
             font-family: Arial, sans-serif;
             background: #121212;
