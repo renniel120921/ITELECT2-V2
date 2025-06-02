@@ -17,33 +17,47 @@ if (!isset($_SESSION['email'])) {
 
 $email = $_SESSION['email'];
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $entered_otp = trim($_POST['otp']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $entered_otp = trim($_POST['otp'] ?? '');
 
     if (!ctype_digit($entered_otp) || strlen($entered_otp) !== 6) {
         $error = "OTP must be a 6-digit number.";
     } else {
         // Fetch OTP from database
         $stmt = $conn->prepare("SELECT otp FROM user WHERE email = ? LIMIT 1");
-        $stmt->bind_param("s", $email);
-        $stmt->execute();
-        $stmt->bind_result($stored_otp);
-        $stmt->fetch();
-        $stmt->close();
-
-        if ($entered_otp === $stored_otp) {
-            // Update verification status
-            $update_stmt = $conn->prepare("UPDATE user SET otp_verified = 1 WHERE email = ?");
-            $update_stmt->bind_param("s", $email);
-            if ($update_stmt->execute()) {
-                $success = "✅ OTP verified successfully. You may now <a href='login.php'>log in</a>.";
-                session_destroy(); // clear session only after successful update
-            } else {
-                $error = "Database update failed. Please try again.";
-            }
-            $update_stmt->close();
+        if (!$stmt) {
+            $error = "Database error: " . $conn->error;
         } else {
-            $error = "❌ Incorrect OTP. Please double-check your email.";
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
+            $stmt->bind_result($stored_otp);
+            if ($stmt->fetch()) {
+                if ($entered_otp === $stored_otp) {
+                    $stmt->close();
+
+                    // Update verification status
+                    $update_stmt = $conn->prepare("UPDATE user SET otp_verified = 1 WHERE email = ?");
+                    if (!$update_stmt) {
+                        $error = "Database error: " . $conn->error;
+                    } else {
+                        $update_stmt->bind_param("s", $email);
+                        if ($update_stmt->execute()) {
+                            $success = "✅ OTP verified successfully. You may now <a href='login.php'>log in</a>.";
+                            // Unset only the email session, keep session alive if needed
+                            unset($_SESSION['email']);
+                        } else {
+                            $error = "Database update failed. Please try again.";
+                        }
+                        $update_stmt->close();
+                    }
+                } else {
+                    $error = "❌ Incorrect OTP. Please double-check your email.";
+                    $stmt->close();
+                }
+            } else {
+                $error = "No OTP found for this email. Please request a new one.";
+                $stmt->close();
+            }
         }
     }
 }
@@ -53,7 +67,7 @@ $conn->close();
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Verify OTP</title>
     <style>
         body {
@@ -128,7 +142,7 @@ $conn->close();
     <?php if ($success): ?>
         <div class="success"><?php echo $success; ?></div>
     <?php else: ?>
-        <form method="POST">
+        <form method="POST" autocomplete="off">
             <input type="text" name="otp" placeholder="Enter 6-digit OTP" maxlength="6" required />
             <button type="submit">Verify</button>
         </form>

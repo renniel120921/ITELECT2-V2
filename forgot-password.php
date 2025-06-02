@@ -2,7 +2,6 @@
 session_start();
 require_once 'database/dbconnection.php';
 
-// PHPMailer imports (adjust path if necessary)
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
@@ -16,29 +15,48 @@ $config = [
     'password' => ''
 ];
 
+// Simple rate limit: 1 request per 60 seconds per session
+if (!isset($_SESSION['last_reset_request'])) {
+    $_SESSION['last_reset_request'] = 0;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = trim($_POST['email'] ?? '');
 
-    if (!$email) {
+    $now = time();
+    if ($now - $_SESSION['last_reset_request'] < 60) {
+        $error = "Please wait a minute before requesting again.";
+    } elseif (!$email) {
         $error = "Email is required.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Invalid email format.";
     } else {
         try {
             $db = (new Database($config))->dbConnection();
 
+            // Check if user exists
             $stmt = $db->prepare("SELECT id FROM user WHERE email = ?");
             $stmt->execute([$email]);
             $user = $stmt->fetch();
 
             if ($user) {
                 $user_id = $user['id'];
+
+                // Delete existing tokens for this user
+                $stmt = $db->prepare("DELETE FROM password_resets WHERE user_id = ?");
+                $stmt->execute([$user_id]);
+
+                // Create new token
                 $token = bin2hex(random_bytes(32));
                 $expires_at = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
+                // Insert token
                 $stmt = $db->prepare("INSERT INTO password_resets (user_id, token, expires_at, created_at) VALUES (?, ?, ?, NOW())");
                 $stmt->execute([$user_id, $token, $expires_at]);
 
                 $reset_link = "http://localhost/ITELECT2-V2/reset-password.php?token=" . $token;
 
+                // Prepare email
                 $to = $email;
                 $subject = "Password Reset Request";
                 $message = "Hi,\n\nClick the link below to reset your password:\n\n$reset_link\n\nThis link expires in 1 hour.\n\nIf you didn't request this, just ignore this email.";
@@ -49,12 +67,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $mail->isSMTP();
                     $mail->Host       = 'smtp.gmail.com';
                     $mail->SMTPAuth   = true;
-                    $mail->Username   = 'rennielsalazar948@gmail.com';  // Your Gmail address
-                    $mail->Password   = 'rfel kxiz jhip nobw';    // Your Gmail app password or account password
+                    $mail->Username   = 'rennielsalazar948@gmail.com';  // Gmail address
+                    $mail->Password   = 'rfel kxiz jhip nobw';          // Gmail app password
                     $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
                     $mail->Port       = 587;
 
-                    $mail->setFrom('no-reply@yourdomain.com', 'Reset Password ka ya??');
+                    $mail->setFrom('no-reply@yourdomain.com', 'Reset Password');
                     $mail->addAddress($to);
 
                     $mail->isHTML(false);
@@ -62,13 +80,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $mail->Body    = $message;
 
                     $mail->send();
+
                     $success = "If this email exists in our system, you will receive a reset link shortly.";
+                    $_SESSION['last_reset_request'] = $now;  // Update rate limit time
                 } catch (Exception $e) {
                     $error = "Failed to send reset email. Mailer Error: {$mail->ErrorInfo}";
                 }
             } else {
-                // Uniform message regardless of user existence
+                // Always show this message to prevent enumeration
                 $success = "If this email exists in our system, you will receive a reset link shortly.";
+                $_SESSION['last_reset_request'] = $now;  // Update rate limit time
             }
         } catch (PDOException $e) {
             $error = "Database error: " . $e->getMessage();
@@ -83,6 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8" />
     <title>Forgot Password</title>
     <style>
+        /* Your existing CSS */
         body {
             font-family: Arial, sans-serif;
             background: #121212;

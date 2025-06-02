@@ -7,7 +7,12 @@ if (!isset($_SESSION['email'])) {
     exit;
 }
 
-// You can also store username in session during login for better UX
+// CSRF Token Setup
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+// Optional: Store username in session during login for display
 $username = $_SESSION['username'] ?? 'User';
 ?>
 
@@ -29,6 +34,7 @@ $username = $_SESSION['username'] ?? 'User';
         display: flex;
         min-height: 100vh;
     }
+
     /* Sidebar */
     nav.sidebar {
         width: 220px;
@@ -113,7 +119,14 @@ $username = $_SESSION['username'] ?? 'User';
     <main class="content">
         <h1>Welcome, <?php echo htmlspecialchars($username); ?>!</h1>
         <p>This is your dashboard where you can manage your account, view reports, and update settings.</p>
-        <!-- Add your dashboard widgets/content here -->
+
+        <!-- Example secured form (if needed in future) -->
+        <!--
+        <form method="POST" action="some-action.php">
+            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token']; ?>">
+            <button type="submit">Secure Action</button>
+        </form>
+        -->
     </main>
 </body>
 </html>

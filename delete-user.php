@@ -8,46 +8,35 @@ try {
         PDO::ATTR_EMULATE_PREPARES => false,
     ]);
 } catch (PDOException $e) {
-    die("Database connection failed: " . $e->getMessage());
+    die("Database connection failed: " . htmlspecialchars($e->getMessage()));
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = $_POST['email'] ?? '';
+    $email = trim($_POST['email'] ?? '');
 
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $message = "Invalid email format.";
+        $message = "⚠️ Invalid email format.";
     } else {
-        // Find user by email
         $stmt = $pdo->prepare("SELECT id FROM user WHERE email = ?");
         $stmt->execute([$email]);
         $user = $stmt->fetch();
 
         if ($user) {
             $userId = $user['id'];
-
             try {
-                // Begin transaction
                 $pdo->beginTransaction();
 
-                // Delete logs related to user
-                $stmtDeleteLogs = $pdo->prepare("DELETE FROM logs WHERE user_id = ?");
-                $stmtDeleteLogs->execute([$userId]);
+                $pdo->prepare("DELETE FROM logs WHERE user_id = ?")->execute([$userId]);
+                $pdo->prepare("DELETE FROM user WHERE id = ?")->execute([$userId]);
 
-                // Delete user
-                $stmtDeleteUser = $pdo->prepare("DELETE FROM user WHERE id = ?");
-                $stmtDeleteUser->execute([$userId]);
-
-                // Commit transaction
                 $pdo->commit();
-
-                $message = "User with email '$email' and related logs have been deleted.";
+                $message = "✅ User with email '".htmlspecialchars($email)."' and related logs have been deleted.";
             } catch (Exception $e) {
-                // Rollback on error
                 $pdo->rollBack();
-                $message = "Failed to delete user: " . $e->getMessage();
+                $message = "❌ Failed to delete user: " . htmlspecialchars($e->getMessage());
             }
         } else {
-            $message = "No user found with email '$email'.";
+            $message = "⚠️ No user found with email '".htmlspecialchars($email)."'.";
         }
     }
 }
@@ -59,21 +48,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta charset="UTF-8" />
 <title>Delete User</title>
 <style>
-    body { font-family: Arial; padding: 20px; background: #121212; color: #eee; }
-    input, button { padding: 10px; margin: 10px 0; width: 300px; border-radius: 5px; border: none; }
-    button { background: #ff4444; color: white; cursor: pointer; font-weight: bold; }
+    body { font-family: Arial, sans-serif; padding: 20px; background: #121212; color: #eee; }
+    input, button { padding: 10px; margin: 10px 0; width: 320px; border-radius: 5px; border: none; font-size: 16px; }
+    button { background: #ff4444; color: #fff; cursor: pointer; font-weight: bold; transition: background 0.3s ease; }
+    button:hover { background: #cc0000; }
     .message { margin: 20px 0; font-weight: 700; }
 </style>
 </head>
 <body>
-    <h2>Delete User by Email (For Testing Only!)</h2>
+    <h2>Delete User by Email <small style="color:#f55;">(For Testing Only!)</small></h2>
     <form method="POST" autocomplete="off">
         <input type="email" name="email" placeholder="Enter email to delete" required />
         <br />
         <button type="submit">Delete User</button>
     </form>
+
     <?php if ($message): ?>
-        <div class="message"><?php echo htmlspecialchars($message); ?></div>
+        <div class="message"><?php echo $message; ?></div>
     <?php endif; ?>
 </body>
 </html>

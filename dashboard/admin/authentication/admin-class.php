@@ -1,6 +1,6 @@
 <?php
 require_once 'config/settings-configuration.php';
-require_once 'database/dbconnection.php';          
+require_once 'database/dbconnection.php';
 
 class Admin
 {
@@ -9,22 +9,44 @@ class Admin
     public function __construct(PDO $pdo)
     {
         $this->conn = $pdo;
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            session_start();
+        }
+    }
+
+    /**
+     * Generate CSRF token and store in session
+     */
+    public function generateCSRFToken(): string
+    {
+        $token = bin2hex(random_bytes(32));
+        $_SESSION['csrf_token'] = $token;
+        return $token;
+    }
+
+    /**
+     * Validate CSRF token
+     */
+    public function validateCSRFToken(string $token): bool
+    {
+        return isset($_SESSION['csrf_token']) && hash_equals($_SESSION['csrf_token'], $token);
     }
 
     /**
      * Login as admin
      */
-    public function loginAdmin(string $username, string $password): bool
+    public function loginAdmin(string $username, string $password, string $csrfToken): bool
     {
+        if (!$this->validateCSRFToken($csrfToken)) {
+            return false;
+        }
+
         $sql = "SELECT * FROM admin WHERE username = :username LIMIT 1";
         $stmt = $this->conn->prepare($sql);
         $stmt->execute(['username' => $username]);
         $admin = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($admin && password_verify($password, $admin['password'])) {
-            if (session_status() !== PHP_SESSION_ACTIVE) {
-                session_start();
-            }
             $_SESSION['admin_id'] = $admin['id'];
             $_SESSION['admin_username'] = $admin['username'];
             return true;
@@ -36,8 +58,12 @@ class Admin
     /**
      * Register a new user and send OTP
      */
-    public function createUser(string $username, string $email, string $password): string|bool
+    public function createUser(string $username, string $email, string $password, string $csrfToken): string|bool
     {
+        if (!$this->validateCSRFToken($csrfToken)) {
+            return "Invalid CSRF token.";
+        }
+
         $checkSql = "SELECT id FROM user WHERE email = :email LIMIT 1";
         $stmt = $this->conn->prepare($checkSql);
         $stmt->execute(['email' => $email]);
@@ -118,8 +144,12 @@ class Admin
     /**
      * Delete a user by ID
      */
-    public function deleteUser(int $userId): bool
+    public function deleteUser(int $userId, string $csrfToken): bool
     {
+        if (!$this->validateCSRFToken($csrfToken)) {
+            return false;
+        }
+
         $sql = "DELETE FROM user WHERE id = :id";
         $stmt = $this->conn->prepare($sql);
         return $stmt->execute(['id' => $userId]);
@@ -130,9 +160,6 @@ class Admin
      */
     public function logout(): void
     {
-        if (session_status() !== PHP_SESSION_ACTIVE) {
-            session_start();
-        }
         session_unset();
         session_destroy();
     }
